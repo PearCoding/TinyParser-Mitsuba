@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -383,6 +384,104 @@ private:
 	std::unordered_map<std::string, Property> mProperties;
 };
 
+// --------------- Predeclarations
+class BSDF;
+class Emitter;
+class Film;
+class Integrator;
+class RFilter;
+class Sampler;
+class Sensor;
+class Shape;
+class Texture;
+
+// --------------- BSDF
+class TPM_LIB BSDF : public Entity {
+public:
+	inline BSDF()
+		: Entity(ET_BSDF)
+	{
+	}
+};
+
+// --------------- Emitter
+class TPM_LIB Emitter : public Entity {
+public:
+	inline Emitter()
+		: Entity(ET_EMITTER)
+	{
+	}
+};
+
+// --------------- Film
+class TPM_LIB Film : public Entity {
+public:
+	inline Film()
+		: Entity(ET_FILM)
+	{
+	}
+};
+
+// --------------- Integrator
+class TPM_LIB Integrator : public Entity {
+public:
+	inline Integrator()
+		: Entity(ET_INTEGRATOR)
+	{
+	}
+};
+
+// --------------- RFilter
+class TPM_LIB RFilter : public Entity {
+public:
+	inline RFilter()
+		: Entity(ET_RFILTER)
+	{
+	}
+};
+
+// --------------- Sampler
+class TPM_LIB Sampler : public Entity {
+public:
+	inline Sampler()
+		: Entity(ET_SAMPLER)
+	{
+	}
+};
+
+// --------------- Sensor
+class TPM_LIB Sensor : public Entity {
+public:
+	inline Sensor()
+		: Entity(ET_SENSOR)
+	{
+	}
+};
+
+// --------------- Shape
+class TPM_LIB Shape : public Entity {
+public:
+	inline Shape()
+		: Entity(ET_SHAPE)
+	{
+	}
+
+	inline TPM_NODISCARD BSDF* bsdf() const { return mBSDF.get(); }
+	inline void setBSDF(const std::shared_ptr<BSDF>& bsdf) { mBSDF = bsdf; }
+
+private:
+	std::shared_ptr<BSDF> mBSDF;
+};
+
+// --------------- Texture
+class TPM_LIB Texture : public Entity {
+public:
+	inline Texture()
+		: Entity(ET_TEXTURE)
+	{
+	}
+};
+
 // --------------- Scene
 class TPM_LIB Scene {
 	friend class SceneLoader;
@@ -401,7 +500,7 @@ public:
 	}
 #endif
 
-	static TPM_NODISCARD Scene loadFromStream(std::istream& stream);
+	// static TPM_NODISCARD Scene loadFromStream(std::istream& stream);
 
 	static TPM_NODISCARD Scene loadFromFile(const char* path);
 	static TPM_NODISCARD Scene loadFromString(const char* str);
@@ -423,5 +522,7 @@ private:
 	int mVersionMajor;
 	int mVersionMinor;
 	int mVersionPatch;
+
+	std::vector<std::shared_ptr<Entity>> mEntities;
 };
 } // namespace TPM_NAMESPACE

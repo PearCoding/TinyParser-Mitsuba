@@ -1,5 +1,5 @@
 set(CPACK_PACKAGE_VENDOR "PearCoding")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Tiny parser for project files used by Mitsuba raytracer")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Tiny parser for scene files defined by the Mitsuba renderer")
 set(CPACK_PACKAGE_CONTACT "PearCoding <omercan AT pearcoding DOT eu>")
 set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})

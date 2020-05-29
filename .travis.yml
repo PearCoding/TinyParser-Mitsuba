@@ -39,6 +39,7 @@ jobs:
             - ubuntu-toolchain-r-test
           packages:
             - g++-8
+            - lcov
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && USE_COVERAGE=ON"
 
@@ -100,44 +101,44 @@ jobs:
       addons:
         apt:
           sources:
-            - llvm-toolchain-bionic-7.0
+            - llvm-toolchain-bionic-7
           packages:
-            - clang-7.0
+            - clang-7
       env:
-        - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
+        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
 
     - os: linux
       dist: bionic
       addons:
         apt:
           sources:
-            - llvm-toolchain-bionic-8.0
+            - llvm-toolchain-bionic-8
           packages:
-            - clang-8.0
+            - clang-8
       env:
-        - MATRIX_EVAL="CC=clang-8.0 && CXX=clang++-8.0"
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
 
     - os: linux
       dist: bionic
       addons:
         apt:
           sources:
-            - llvm-toolchain-bionic-9.0
+            - llvm-toolchain-bionic-9
           packages:
-            - clang-9.0
+            - clang-9
       env:
-        - MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0"
+        - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
 
     - os: linux
       dist: bionic
       addons:
         apt:
           sources:
-            - llvm-toolchain-bionic-10.0
+            - llvm-toolchain-bionic-10
           packages:
-            - clang-10.0
+            - clang-10
       env:
-        - MATRIX_EVAL="CC=clang-10.0 && CXX=clang++-10.0"
+        - MATRIX_EVAL="CC=clang-10 && CXX=clang++-10"
 
 # Macos
     - os: osx

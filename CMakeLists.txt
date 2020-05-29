@@ -20,7 +20,9 @@ endif()
 
 option(BUILD_SHARED_LIBS 	"Build as shared library" ON)
 option(BUILD_TESTING 		"Build the testing tree" ${TPM_BUILD_EXTRA_DEFAULT})
-option(GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." ${TPM_BUILD_EXTRA_DEFAULT})
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	option(GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." ${TPM_BUILD_EXTRA_DEFAULT})
+endif()
 option(BUILD_DOCUMENTATION 	"Build documentation with doxygen." ${TPM_BUILD_EXTRA_DEFAULT})
 
 #SETS

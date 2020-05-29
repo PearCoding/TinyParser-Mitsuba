@@ -13,11 +13,15 @@ set(TPM_LIB_SOVERSION "${PROJECT_VERSION_MAJOR}")
 
 get_directory_property(TPM_IS_SUBPROJECT PARENT_DIRECTORY)
 if(TPM_IS_SUBPROJECT)
-set(TPM_IS_SUBPROJECT ON)
+set(TPM_BUILD_EXTRA_DEFAULT OFF)
+else()
+set(TPM_BUILD_EXTRA_DEFAULT ON)
 endif()
 
-option(BUILD_SHARED_LIBS "Build as shared library" ON)
-option(BUILD_TESTING "Build the testing tree" TPM_IS_SUBPROJECT)
+option(BUILD_SHARED_LIBS 	"Build as shared library" ON)
+option(BUILD_TESTING 		"Build the testing tree" ${TPM_BUILD_EXTRA_DEFAULT})
+option(GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." ${TPM_BUILD_EXTRA_DEFAULT})
+option(BUILD_DOCUMENTATION 	"Build documentation with doxygen." ${TPM_BUILD_EXTRA_DEFAULT})
 
 #SETS
 if(BUILD_SHARED_LIBS AND WIN32 AND NOT CYGWIN)
@@ -52,11 +56,27 @@ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC $<$<CONFIG:Debug>:TPM_DEBUG> PRIVATE "TPM_EXPORT")
 
+# Coverage start
+if(GENERATE_COVERAGE AND (CMAKE_BUILD_TYPE MATCHES Debug))
+	include(cmake/Coveralls.cmake)
+	coveralls_turn_on_coverage()
+endif()
+
 # Tests
 include(CTest)
 if(BUILD_TESTING)
 	add_subdirectory(external/Catch2)
 	add_subdirectory(src/tests)
+endif()
+
+# Coverage End
+if(GENERATE_COVERAGE AND (CMAKE_BUILD_TYPE MATCHES Debug))
+	include(cmake/Coverage.cmake)
+endif()
+
+# Documentation
+if(BUILD_DOCUMENTATION)
+	include(cmake/Documentation.cmake)
 endif()
 
 # Install

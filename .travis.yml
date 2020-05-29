@@ -40,7 +40,7 @@ jobs:
           packages:
             - g++-8
       env:
-        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && USE_COVERAGE=ON"
 
     - os: linux
       addons:
@@ -53,6 +53,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
 
     - os: linux
+      dist: bionic
       addons:
         apt:
           sources:
@@ -72,8 +73,8 @@ jobs:
       env:
         - MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
 
-    # works on Trusty
     - os: linux
+      dist: trusty
       addons:
         apt:
           sources:
@@ -84,81 +85,61 @@ jobs:
         - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
 
     - os: linux
+      dist: bionic
       addons:
         apt:
           sources:
-            - llvm-toolchain-trusty-6.0
+            - llvm-toolchain-bionic-6.0
           packages:
             - clang-6.0
       env:
         - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
 
     - os: linux
+      dist: bionic
       addons:
         apt:
           sources:
-            - llvm-toolchain-trusty-7.0
+            - llvm-toolchain-bionic-7.0
           packages:
             - clang-7.0
       env:
         - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
 
     - os: linux
+      dist: bionic
       addons:
         apt:
           sources:
-            - llvm-toolchain-trusty-8.0
+            - llvm-toolchain-bionic-8.0
           packages:
             - clang-8.0
       env:
         - MATRIX_EVAL="CC=clang-8.0 && CXX=clang++-8.0"
 
     - os: linux
+      dist: bionic
       addons:
         apt:
           sources:
-            - llvm-toolchain-trusty-9.0
+            - llvm-toolchain-bionic-9.0
           packages:
             - clang-9.0
       env:
         - MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0"
 
     - os: linux
+      dist: bionic
       addons:
         apt:
           sources:
-            - llvm-toolchain-trusty-10.0
+            - llvm-toolchain-bionic-10.0
           packages:
             - clang-10.0
       env:
         - MATRIX_EVAL="CC=clang-10.0 && CXX=clang++-10.0"
 
 # Macos
-    - os: osx
-      osx_image: xcode8
-      env:
-        - MATRIX_EVAL="brew install gcc5 && CC=gcc-5 && CXX=g++-5"
-
-    - os: osx
-      osx_image: xcode8
-      env:
-        - MATRIX_EVAL="brew install gcc6 && CC=gcc-6 && CXX=g++-6"
-
-    - os: osx
-      osx_image: xcode8
-      env:
-        - MATRIX_EVAL="brew install gcc && CC=gcc-7 && CXX=g++-7"
-
-    - os: osx
-      osx_image: xcode8
-      env:
-        - MATRIX_EVAL="brew install gcc && CC=gcc-8 && CXX=g++-8"
-
-    - os: osx
-      osx_image: xcode8
-      env:
-        - MATRIX_EVAL="brew install gcc && CC=gcc-9 && CXX=g++-9"
-
     - os: osx
       osx_image: xcode11.2
 
@@ -167,6 +148,9 @@ jobs:
     
     - os: osx
       osx_image: xcode9.4
+
+    - os: osx
+      osx_image: xcode8
 
 
 before_install:
@@ -187,6 +171,6 @@ script:
   - make -j4
 after_success:
   - ctest --output-on-failure
-  - if [ $USE_COVERAGE == ON ]; then ninja coveralls; fi
+  - if [ $USE_COVERAGE == ON ]; then make coveralls; fi
 notifications:
   email: false

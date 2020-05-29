@@ -52,6 +52,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE external/tinyxml2/)
+target_compile_features(${CMAKE_PROJECT_NAME} PRIVATE cxx_std_11)
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
 	VERSION "${TPM_LIB_VERSION}"

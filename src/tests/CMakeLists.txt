@@ -11,7 +11,7 @@ FUNCTION(PUSH_TEST name files)
 
 	set(TARGET tpm_test_${name})
 	add_executable(${TARGET} ${files})
-	target_link_libraries(${TARGET} PRIVATE ${MAIN_TARGET})
+	target_link_libraries(${TARGET} PRIVATE ${CMAKE_PROJECT_NAME} Catch2::Catch)
 	if(NOT __args_NO_ADD)
 		add_test(NAME ${name} COMMAND ${TARGET})
 	endif()

@@ -11,7 +11,13 @@ project(tinyparser_mitsuba
 set(TPM_LIB_VERSION "${PROJECT_VERSION}")
 set(TPM_LIB_SOVERSION "${PROJECT_VERSION_MAJOR}")
 
+get_directory_property(TPM_IS_SUBPROJECT PARENT_DIRECTORY)
+if(TPM_IS_SUBPROJECT)
+set(TPM_IS_SUBPROJECT ON)
+endif()
+
 option(BUILD_SHARED_LIBS "Build as shared library" ON)
+option(BUILD_TESTING "Build the testing tree" TPM_IS_SUBPROJECT)
 
 #SETS
 if(BUILD_SHARED_LIBS AND WIN32 AND NOT CYGWIN)
@@ -31,7 +37,6 @@ set(TINYXML2_FILES external/tinyxml2/tinyxml2.cpp external/tinyxml2/tinyxml2.h)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(TPM_NAMESPACE tinyparser_mitsuba)
@@ -48,11 +53,9 @@ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
 target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC $<$<CONFIG:Debug>:TPM_DEBUG> PRIVATE "TPM_EXPORT")
 
 # Tests
-include(CTest) 
+include(CTest)
 if(BUILD_TESTING)
-	set(CATCH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/Catch2)
-	add_library(Catch2::Catch IMPORTED INTERFACE)
-	set_target_properties(Catch2::Catch PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CATCH_INCLUDE_DIR}")
+	add_subdirectory(external/Catch2)
 	add_subdirectory(src/tests)
 endif()
 

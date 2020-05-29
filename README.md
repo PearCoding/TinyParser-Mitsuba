@@ -18,8 +18,7 @@ Mitsuba renderer:
 
 ## Dependencies
 
+Using the library does not need any external libraries except the standard template library (STL). However, building from source requires the embedded TinyXML2 library, which is taken care of automaticly. For internal testing the Catch2 is required, but also included as a submodule. 
+
 - TinyXML2 <https://github.com/leethomason/tinyxml2> (submodule)
-
-### Optional
-
 - Catch2 <https://github.com/catchorg/Catch2> (submodule)

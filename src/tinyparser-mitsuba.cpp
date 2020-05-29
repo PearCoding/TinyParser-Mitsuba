@@ -1,16 +1,28 @@
 #include "tinyparser-mitsuba.h"
 
+#include <tinyxml2.h>
+
 namespace TPM_NAMESPACE {
-Scene Scene::loadFromFile(const std::string& /*path*/)
+class SceneLoader {
+public:
+	static Scene loadFromXML(const tinyxml2::XMLDocument& /*xml*/)
+	{
+		return Scene();
+	}
+};
+
+Scene Scene::loadFromFile(const char* path)
 {
-	// TODO
-	return Scene();
+	tinyxml2::XMLDocument xml;
+	xml.LoadFile(path);
+	return SceneLoader::loadFromXML(xml);
 }
 
-Scene Scene::loadFromString(const std::string& /*str*/)
+Scene Scene::loadFromString(const char* str)
 {
-	// TODO
-	return Scene();
+	tinyxml2::XMLDocument xml;
+	xml.Parse(str);
+	return SceneLoader::loadFromXML(xml);
 }
 
 Scene Scene::loadFromStream(std::istream& /*stream*/)
@@ -19,9 +31,10 @@ Scene Scene::loadFromStream(std::istream& /*stream*/)
 	return Scene();
 }
 
-Scene Scene::loadFromMemory(const uint8_t* /*data*/, size_t /*size*/)
+Scene Scene::loadFromMemory(const uint8_t* data, size_t size)
 {
-	// TODO
-	return Scene();
+	tinyxml2::XMLDocument xml;
+	xml.Parse(reinterpret_cast<const char*>(data), size);
+	return SceneLoader::loadFromXML(xml);
 }
 } // namespace TPM_NAMESPACE

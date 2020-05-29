@@ -25,17 +25,18 @@
 #define TPM_NAMESPACE tinyparser_mitsuba
 
 // Check for C++ features
-/*#ifdef __has_cpp_attribute
-#if __has_cpp_attribute(nodiscard)
+
+#if __cplusplus >= 201703L // 2017
 #define TPM_NODISCARD [[nodiscard]]
 #endif
-#endif*/
 
 #ifndef TPM_NODISCARD
-#if __cpp_constexpr >= 201603L
-#define TPM_NODISCARD [[nodiscard]]
-#else
 #define TPM_NODISCARD
+#endif
+
+#ifndef TPM_HAS_STRING_VIEW
+#if __cpp_lib_string_view >= 201606L
+#define TPM_HAS_STRING_VIEW
 #endif
 #endif
 
@@ -384,14 +385,30 @@ private:
 
 // --------------- Scene
 class TPM_LIB Scene {
+	friend class SceneLoader;
+
 public:
-	static TPM_NODISCARD Scene loadFromFile(const std::string& path);
-	static TPM_NODISCARD Scene loadFromString(const std::string& str);
+	static inline TPM_NODISCARD Scene loadFromFile(const std::string& path)
+	{
+		return loadFromFile(path.c_str());
+	}
+	static inline TPM_NODISCARD Scene loadFromString(const std::string& str);
+
+#ifdef TPM_HAS_STRING_VIEW
+	static inline TPM_NODISCARD Scene loadFromString(const std::string_view& str)
+	{
+		return loadFromString(str.data(), str.size());
+	}
+#endif
+
 	static TPM_NODISCARD Scene loadFromStream(std::istream& stream);
+
+	static TPM_NODISCARD Scene loadFromFile(const char* path);
+	static TPM_NODISCARD Scene loadFromString(const char* str);
 	static TPM_NODISCARD Scene loadFromMemory(const uint8_t* data, size_t size);
 
 	Scene(const Scene& other) = default;
-	Scene(Scene&& other)		= default;
+	Scene(Scene&& other)	  = default;
 
 	Scene& operator=(const Scene& other) = default;
 	Scene& operator=(Scene&& other) = default;

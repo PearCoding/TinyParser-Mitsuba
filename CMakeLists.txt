@@ -40,17 +40,18 @@ include(cmake/check_submodules.cmake)
 set(TINYPARSER_MITSUBA_FILES include/tinyparser-mitsuba.h src/tinyparser-mitsuba.cpp)
 set(TINYXML2_FILES external/tinyxml2/tinyxml2.cpp external/tinyxml2/tinyxml2.h)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(TPM_NAMESPACE tinyparser_mitsuba)
 add_library(${CMAKE_PROJECT_NAME} ${TINYPARSER_MITSUBA_FILES} ${TINYXML2_FILES}) 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC 
-	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>/include
+	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE external/tinyxml2/)
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
 	VERSION "${TPM_LIB_VERSION}"

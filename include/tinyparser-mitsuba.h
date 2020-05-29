@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #ifdef _WIN32
@@ -61,7 +62,8 @@ enum EntityType {
 };
 
 enum PropertyType {
-	PT_INTEGER = 0,
+	PT_NONE = 0,
+	PT_INTEGER,
 	PT_NUMBER,
 	PT_BOOL,
 	PT_STRING,
@@ -136,6 +138,11 @@ private:
 // --------------- Property
 class TPM_LIB Property {
 public:
+	inline Property()
+		: mType(PT_NONE)
+	{
+	}
+
 	Property(const Property& other) = default;
 	Property(Property&& other)		= default;
 
@@ -143,6 +150,7 @@ public:
 	Property& operator=(Property&& other) = default;
 
 	inline TPM_NODISCARD PropertyType type() const { return mType; }
+	inline TPM_NODISCARD bool isValid() const { return mType != PT_NONE; }
 
 	inline Number getNumber(Number def = Number(0), bool* ok = nullptr) const
 	{
@@ -316,7 +324,7 @@ public:
 	}
 
 private:
-	inline Property(PropertyType type)
+	inline explicit Property(PropertyType type)
 		: mType(type)
 	{
 	}
@@ -336,5 +344,67 @@ private:
 	};
 	std::string mString;
 	Spectrum mSpectrum;
+};
+
+// --------------- Entity
+class TPM_LIB Entity {
+public:
+	inline TPM_NODISCARD EntityType type() const { return mType; }
+
+	inline TPM_NODISCARD Property property(const std::string& key) const
+	{
+		return mProperties.count(key) ? mProperties.at(key) : Property();
+	}
+
+	inline void setProperty(const std::string& key, const Property& prop)
+	{
+		mProperties[key] = prop;
+	}
+
+	inline TPM_NODISCARD Property& operator[](const std::string& key)
+	{
+		return mProperties[key];
+	}
+
+	inline TPM_NODISCARD Property operator[](const std::string& key) const
+	{
+		return property(key);
+	}
+
+protected:
+	inline explicit Entity(EntityType type)
+		: mType(type)
+	{
+	}
+
+private:
+	EntityType mType;
+	std::unordered_map<std::string, Property> mProperties;
+};
+
+// --------------- Scene
+class TPM_LIB Scene {
+public:
+	static TPM_NODISCARD Scene loadFromFile(const std::string& path);
+	static TPM_NODISCARD Scene loadFromString(const std::string& str);
+	static TPM_NODISCARD Scene loadFromStream(std::istream& stream);
+	static TPM_NODISCARD Scene loadFromMemory(const uint8_t* data, size_t size);
+
+	Scene(const Scene& other) = default;
+	Scene(Scene&& other)		= default;
+
+	Scene& operator=(const Scene& other) = default;
+	Scene& operator=(Scene&& other) = default;
+
+	inline TPM_NODISCARD int versionMajor() const { return mVersionMajor; }
+	inline TPM_NODISCARD int versionMinor() const { return mVersionMinor; }
+	inline TPM_NODISCARD int versionPatch() const { return mVersionPatch; }
+
+private:
+	Scene() = default;
+
+	int mVersionMajor;
+	int mVersionMinor;
+	int mVersionPatch;
 };
 } // namespace TPM_NAMESPACE

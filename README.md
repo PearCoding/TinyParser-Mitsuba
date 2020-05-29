@@ -8,7 +8,7 @@
 ![Language](https://img.shields.io/badge/language-c++-blue.svg)
 ![C++ Standard](https://img.shields.io/badge/std-c++11-blue.svg)
 
-A tiny parser for project files similar to the ones used by the Mitsuba renderer. This library only parses the XML files, distributes to easy to use Object Oriented structures, but does not generate any images. External resources, like images and shapes, are not loaded, but checked for existence - allowing lazy loading in later stages of the renderer. One exception are spectrum .spd files, which are loaded directly.
+A tiny C++11 parser for scene files similar to the ones used by the Mitsuba renderer. This library only parses the XML files, distributes to easy to use Object Oriented structures, but does not generate any images. External resources, like images and shapes, are not loaded, but checked for existence - allowing lazy loading in later stages of the renderer. One exception are spectrum .spd files, which are loaded directly.
 
 This project is not affiliated with the Mitsuba renderer and was developed to allow easy comparisons between different raytracers using one common scene file. This does not necessarily mean a raytracer is capable of rendering all present features however.
 

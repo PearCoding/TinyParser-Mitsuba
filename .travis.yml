@@ -182,9 +182,9 @@ before_script:
   - mkdir build
   - cd build
   - if [ $USE_COVERAGE == ON ]; then lcov --directory . --zerocounters; fi
-  - cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug  ..
+  - cmake -DCMAKE_BUILD_TYPE=Debug  ..
 script:
-  - ninja
+  - make -j4
 after_success:
   - ctest --output-on-failure
   - if [ $USE_COVERAGE == ON ]; then ninja coveralls; fi

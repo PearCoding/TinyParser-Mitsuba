@@ -129,17 +129,6 @@ jobs:
       env:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
 
-    - os: linux
-      dist: bionic
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-bionic-10
-          packages:
-            - clang-10
-      env:
-        - MATRIX_EVAL="CC=clang-10 && CXX=clang++-10"
-
 # Macos
     - os: osx
       osx_image: xcode11.2

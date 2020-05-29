@@ -1,3 +1,3 @@
-SET(CV_FILES src/tinyparser_mitsuba.cpp include/tinyparser_mitsuba.h)
+SET(CV_FILES src/tinyparser-mitsuba.cpp include/tinyparser-mitsuba.h)
 
 coveralls_setup("${CV_FILES}" ON)

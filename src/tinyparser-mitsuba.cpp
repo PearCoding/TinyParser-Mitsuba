@@ -222,15 +222,9 @@ public:
 
 	inline bool hasID(const std::string& id) const { return mMap.count(id) > 0; }
 
-	inline std::shared_ptr<Object> getByType(const std::string& id, ObjectType type) const
+	inline std::shared_ptr<Object> get(const std::string& id) const
 	{
-		if (!mMap.count(id))
-			return nullptr;
-
-		if (mMap.at(id)->type() != type)
-			return nullptr;
-
-		return mMap.at(id);
+		return hasID(id) ? mMap.at(id) : nullptr;
 	}
 
 	inline void makeAlias(const std::string& id, const std::string& as)
@@ -402,6 +396,7 @@ static Property parseString(const ArgumentContainer& cnt, const tinyxml2::XMLEle
 	return Property::fromString(unpackValues(attrib, cnt));
 }
 
+// ---------- Transform Parameter
 // Declaration
 Transform parseInnerMatrix(const ArgumentContainer&, const tinyxml2::XMLElement*);
 
@@ -421,7 +416,7 @@ Transform parseTransformTranslate(const ArgumentContainer& cnt, const tinyxml2::
 			delta.z = 0;
 	}
 
-	return Transform::fromTranslation(delta) * parseInnerMatrix(cnt, element);
+	return Transform::fromTranslation(delta);
 }
 
 Transform parseTransformScale(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
@@ -440,7 +435,7 @@ Transform parseTransformScale(const ArgumentContainer& cnt, const tinyxml2::XMLE
 			scale.z = 1;
 	}
 
-	return Transform::fromScale(scale) * parseInnerMatrix(cnt, element);
+	return Transform::fromScale(scale);
 }
 
 Transform parseTransformRotate(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
@@ -463,7 +458,7 @@ Transform parseTransformRotate(const ArgumentContainer& cnt, const tinyxml2::XML
 	if (!unpackNumber(element->Attribute("angle"), cnt, &angle))
 		return Transform::fromIdentity();
 
-	return Transform::fromRotation(axis, angle) * parseInnerMatrix(cnt, element);
+	return Transform::fromRotation(axis, angle);
 }
 
 Transform parseTransformLookAt(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
@@ -478,7 +473,42 @@ Transform parseTransformLookAt(const ArgumentContainer& cnt, const tinyxml2::XML
 	if (!unpackVector(element->Attribute("up"), cnt, &up))
 		up = Vector(0, 0, 1);
 
-	return Transform::fromLookAt(origin, target, up) * parseInnerMatrix(cnt, element);
+	return Transform::fromLookAt(origin, target, up);
+}
+
+Transform parseTransformMatrix(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto value = element->Attribute("value");
+	if (!value)
+		return Transform::fromIdentity();
+
+	const auto valueStr = unpackValues(value, cnt);
+	Number tmp[16];
+	auto c = _parseNumber(valueStr, tmp, 16);
+
+	// Row-Major
+	if (c == 9) {
+		return Transform({ tmp[0], tmp[1], tmp[2], Number(0),
+						   tmp[3], tmp[4], tmp[5], Number(0),
+						   tmp[6], tmp[7], tmp[8], Number(0),
+						   Number(0), Number(0), Number(0), Number(1) });
+	}
+#ifndef TPM_NO_EXTENSIONS
+	else if (c == 12) { // Official mitsuba does not support this
+		return Transform({ tmp[0], tmp[1], tmp[2], tmp[3],
+						   tmp[4], tmp[5], tmp[6], tmp[7],
+						   tmp[8], tmp[9], tmp[10], tmp[11],
+						   Number(0), Number(0), Number(0), Number(1) });
+	}
+#endif
+	else if (c == 16) {
+		return Transform({ tmp[0], tmp[1], tmp[2], tmp[3],
+						   tmp[4], tmp[5], tmp[6], tmp[7],
+						   tmp[8], tmp[9], tmp[10], tmp[11],
+						   tmp[12], tmp[13], tmp[14], tmp[15] });
+	}
+
+	return Transform::fromIdentity();
 }
 
 using TransformParseCallback = Transform (*)(const ArgumentContainer&, const tinyxml2::XMLElement*);
@@ -490,39 +520,52 @@ struct {
 	{ "scale", parseTransformScale },
 	{ "rotate", parseTransformRotate },
 	{ "lookAt", parseTransformLookAt },
+	{ "lookat", parseTransformLookAt },
+	{ "matrix", parseTransformMatrix },
 	{ nullptr, nullptr }
 };
 
 Transform parseInnerMatrix(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
+	Transform inner = Transform::fromIdentity();
 	for (auto childElement = element->FirstChildElement();
 		 childElement;
 		 childElement = childElement->NextSiblingElement()) {
 
 		for (int i = 0; _transformParseElements[i].Name; ++i) {
 			if (strcmp(childElement->Name(), _transformParseElements[i].Name) == 0) {
-				return _transformParseElements[i].Callback(cnt, childElement); // Only handle first entry
+				inner = _transformParseElements[i].Callback(cnt, childElement) * inner;
+				break;
 			}
 		}
 	}
 
-	return Transform::fromIdentity();
+	return inner;
 }
 
 static Property parseTransform(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	// TODO
-	(void)cnt;
-	(void)element;
-	return Property();
+	const auto transform = parseInnerMatrix(cnt, element);
+	return Property::fromTransform(transform);
 }
 
 static Property parseAnimation(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	// TODO
-	(void)cnt;
-	(void)element;
-	return Property();
+	Animation anim;
+	for (auto childElement = element->FirstChildElement();
+		 childElement;
+		 childElement = childElement->NextSiblingElement()) {
+		if (strcmp(childElement->Name(), "transform") != 0)
+			throw std::runtime_error("Animation entries are only of type transform");
+
+		Number time;
+		if (!unpackNumber(childElement->Attribute("time"), cnt, &time))
+			throw std::runtime_error("Animation entry missing time attribute");
+
+		anim.addKeyFrame(time, parseInnerMatrix(cnt, childElement));
+	}
+
+	return Property::fromAnimation(anim);
 }
 
 using PropertyParseCallback = Property (*)(const ArgumentContainer&, const tinyxml2::XMLElement*);
@@ -592,6 +635,32 @@ static void handleDefault(ArgumentContainer& cnt, const tinyxml2::XMLElement* el
 		cnt[name] = value;
 }
 
+static void handleReference(Object* obj, const ArgumentContainer& cnt, const IDContainer& ids, const tinyxml2::XMLElement* element, int flags)
+{
+	auto id = element->Attribute("id");
+	/*auto name = element->Attribute("name");*/ // FIXME: Ignore it for now
+
+	if (!id)
+		throw std::runtime_error("Invalid ref element");
+
+#ifndef TPM_NO_EXTENSIONS
+	const auto ref_id = unpackValues(id, cnt);
+#else
+	(void)cnt;
+	const auto ref_id = std::string(id);
+#endif
+
+	if (!ids.hasID(ref_id))
+		throw std::runtime_error("Id " + ref_id + " does not exists");
+
+	auto ref = ids.get(ref_id);
+
+	if (flags & OT_PF(obj->type()))
+		obj->addObject(ref);
+	else
+		throw std::runtime_error("Id " + ref_id + " not of allowed type");
+}
+
 static const struct {
 	const char* Name;
 	ObjectType Type;
@@ -624,7 +693,7 @@ static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, IDContai
 			continue;
 
 		if ((flags & PF_REFERENCE) && strcmp(childElement->Name(), "ref") == 0) {
-			// Handle reference
+			handleReference(obj, cnt, ids, element, flags);
 		} else if ((flags & PF_DEFAULT) && strcmp(childElement->Name(), "default") == 0) {
 			handleDefault(cnt, childElement);
 		} else if ((flags & PF_INCLUDE) && strcmp(childElement->Name(), "include") == 0) {

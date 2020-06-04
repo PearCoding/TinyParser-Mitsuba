@@ -72,7 +72,8 @@ enum ObjectType {
 
 enum PropertyType {
 	PT_NONE = 0,
-	PT_BLACKBODY, // Uses Number
+	PT_ANIMATION,
+	PT_BLACKBODY,
 	PT_BOOL,
 	PT_INTEGER,
 	PT_NUMBER,
@@ -110,6 +111,11 @@ using Point = Vector;
 struct TPM_LIB Transform {
 	std::array<float, 4 * 4> matrix; // Row major
 
+	inline explicit Transform(const std::array<float, 4 * 4>& arr)
+		: matrix(arr)
+	{
+	}
+
 	inline float& operator()(int i, int j) { return matrix[i * 4 + j]; }
 	inline float operator()(int i, int j) const { return matrix[i * 4 + j]; }
 
@@ -132,12 +138,29 @@ struct TPM_LIB Transform {
 
 private:
 	inline Transform() = default;
-	inline explicit Transform(const std::array<float, 4 * 4>& arr)
-		: matrix(arr)
-	{
-	}
 
 	Transform multiplyFromRight(const Transform& other) const;
+};
+
+// --------------- Animation
+/// A list of time and transform pairs. It is not sorted in any way
+struct TPM_LIB Animation {
+	Animation() = default;
+
+	inline void addKeyFrame(Number time, const Transform& t)
+	{
+		mTimes.push_back(time);
+		mTransforms.push_back(t);
+	}
+
+	inline size_t keyFrameCount() const { return mTimes.size(); }
+
+	inline const std::vector<Number>& keyFrameTimes() const { return mTimes; }
+	inline const std::vector<Transform>& keyFrameTransforms() const { return mTransforms; }
+
+private:
+	std::vector<Number> mTimes;
+	std::vector<Transform> mTransforms;
 };
 
 // --------------- RGB
@@ -383,6 +406,25 @@ public:
 		return p;
 	}
 
+	inline const Animation& getAnimation(const Animation& def = Animation(), bool* ok = nullptr) const
+	{
+		if (mType == PT_ANIMATION) {
+			if (ok)
+				*ok = true;
+			return mAnimation;
+		} else {
+			if (ok)
+				*ok = false;
+			return def;
+		}
+	}
+	static TPM_NODISCARD inline Property fromAnimation(const Animation& v)
+	{
+		Property p(PT_ANIMATION);
+		p.mAnimation = v;
+		return p;
+	}
+
 private:
 	inline explicit Property(PropertyType type)
 		: mType(type)
@@ -404,6 +446,7 @@ private:
 	};
 	std::string mString;
 	Spectrum mSpectrum;
+	Animation mAnimation;
 };
 
 // --------------- Object

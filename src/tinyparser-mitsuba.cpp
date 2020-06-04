@@ -1,11 +1,92 @@
 #include "tinyparser-mitsuba.h"
 
+#include <cmath>
 #include <sstream>
 #include <stdexcept>
 
 #include <tinyxml2.h>
 
 namespace TPM_NAMESPACE {
+
+static inline Vector normalize(const Vector& v)
+{
+	const Number n = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+	return Vector(v.x / n, v.y / n, v.z / n);
+}
+
+static inline Vector cross(const Vector& a, const Vector& b)
+{
+	return Vector(a.y * b.z - a.z * b.y,
+				  a.z * b.x - a.x * b.z,
+				  a.x * b.y - a.y * b.x);
+}
+
+// ------------ Transform
+Transform Transform::fromIdentity()
+{
+	return Transform({ Number(1), Number(0), Number(0), Number(0),
+					   Number(0), Number(1), Number(0), Number(0),
+					   Number(0), Number(0), Number(1), Number(0),
+					   Number(0), Number(0), Number(0), Number(1) });
+}
+
+Transform Transform::fromTranslation(const Vector& delta)
+{
+	return Transform({ Number(1), Number(0), Number(0), delta.x,
+					   Number(0), Number(1), Number(0), delta.y,
+					   Number(0), Number(0), Number(1), delta.z,
+					   Number(0), Number(0), Number(0), Number(1) });
+}
+Transform Transform::fromScale(const Vector& scale)
+{
+	return Transform({ scale.x, Number(0), Number(0), Number(0),
+					   Number(0), scale.y, Number(0), Number(0),
+					   Number(0), Number(0), scale.z, Number(0),
+					   Number(0), Number(0), Number(0), Number(1) });
+}
+
+Transform Transform::fromRotation(const Vector& axis, Number angle)
+{
+	const Vector aa = normalize(axis);
+	const auto sa	= std::sin(angle);
+	const auto ca	= std::cos(angle);
+	const auto nca	= Number(1) - ca;
+
+	return Transform({ ca + aa.x * aa.x * nca, aa.x * aa.y * nca - aa.z * sa, aa.x * aa.z * nca + aa.y * sa, Number(0),
+					   aa.y * aa.x * nca + aa.z * sa, ca + aa.y * aa.y * nca, aa.y * aa.z * nca - aa.x * sa, Number(0),
+					   aa.z * aa.x * nca - aa.y * sa, aa.z * aa.y * nca + aa.x * sa, ca + aa.z * aa.z * nca, Number(0),
+					   Number(0), Number(0), Number(0), Number(1) });
+}
+
+Transform Transform::fromLookAt(const Vector& origin, const Vector& target, const Vector& up)
+{
+	const Vector fwd	= normalize(Vector(target.x - origin.x, target.y - origin.y, target.z - origin.z));
+	const Vector left	= normalize(cross(up, fwd));
+	const Vector alt_up = normalize(cross(fwd, left));
+
+	return Transform({ left.x, alt_up.x, fwd.x, origin.x,
+					   left.y, alt_up.y, fwd.y, origin.y,
+					   left.z, alt_up.z, fwd.z, origin.z,
+					   Number(0), Number(0), Number(0), Number(1) });
+}
+
+Transform Transform::multiplyFromRight(const Transform& other) const
+{
+	Transform result;
+
+	for (int i = 0; i < 4; ++i) {
+		for (int j = 0; j < 4; ++j) {
+			Number sum = 0;
+			for (int k = 0; k < 4; ++k)
+				sum += (*this)(i, k) * other(k, j);
+			result(i, j) = sum;
+		}
+	}
+
+	return result;
+}
+
+// ------------- Parser
 template <typename T, typename Func>
 inline static int _parseScalars(const std::string& str, T* numbers, int amount, Func func)
 {
@@ -319,6 +400,67 @@ static Property parseString(const ArgumentContainer& cnt, const tinyxml2::XMLEle
 	if (!attrib)
 		return Property();
 	return Property::fromString(_unpackValues(attrib->Value(), cnt));
+}
+
+Transform parseInnerMatrix(const ArgumentContainer&, const tinyxml2::XMLElement*);
+
+Transform parseTransformTranslate(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	// TODO
+	Transform M = Transform::fromIdentity();
+	return M * parseInnerMatrix(cnt, element);
+}
+
+Transform parseTransformScale(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto uniformScaleA = element->Attribute("value");
+	if (uniformScaleA) {
+	}
+	// TODO
+	Transform M = Transform::fromIdentity();
+	return M * parseInnerMatrix(cnt, element);
+}
+
+Transform parseTransformRotate(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	// TODO
+	Transform M = Transform::fromIdentity();
+	return M * parseInnerMatrix(cnt, element);
+}
+
+Transform parseTransformLookAt(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	// TODO
+	Transform M = Transform::fromIdentity();
+	return M * parseInnerMatrix(cnt, element);
+}
+
+using TransformParseCallback = Transform (*)(const ArgumentContainer&, const tinyxml2::XMLElement*);
+struct {
+	const char* Name;
+	TransformParseCallback Callback;
+} _transformParseElements[] = {
+	{ "translate", parseTransformTranslate },
+	{ "scale", parseTransformScale },
+	{ "rotate", parseTransformRotate },
+	{ "lookAt", parseTransformLookAt },
+	{ nullptr, nullptr }
+};
+
+Transform parseInnerMatrix(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	for (auto childElement = element->FirstChildElement();
+		 childElement;
+		 childElement = childElement->NextSiblingElement()) {
+
+		for (int i = 0; _transformParseElements[i].Name; ++i) {
+			if (strcmp(childElement->Name(), _transformParseElements[i].Name) == 0) {
+				return _transformParseElements[i].Callback(cnt, childElement); // Only handle first entry
+			}
+		}
+	}
+
+	return Transform::fromIdentity();
 }
 
 static Property parseTransform(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)

@@ -20,3 +20,4 @@ ENDFUNCTION(PUSH_TEST)
 
 PUSH_TEST(property property.cpp)
 PUSH_TEST(integrity integrity.cpp)
+PUSH_TEST(transform transform.cpp)

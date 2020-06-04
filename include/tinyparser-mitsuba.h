@@ -84,6 +84,7 @@ enum PropertyType {
 };
 
 // --------------- Vector/Points
+/// The Vector structure is only for storage. Use a fully featured math library for calculations
 struct TPM_LIB Vector {
 	Number x, y, z;
 	inline Vector(Number x, Number y, Number z)
@@ -104,11 +105,38 @@ inline TPM_NODISCARD bool operator!=(const Vector& a, const Vector& b)
 using Point = Vector;
 
 // --------------- Transform
+/// The Transform structure is only for storage and internal calculations. Use a fully featured math library for your own calculations
 struct TPM_LIB Transform {
 	std::array<float, 4 * 4> matrix; // Row major
 
 	inline float& operator()(int i, int j) { return matrix[i * 4 + j]; }
 	inline float operator()(int i, int j) const { return matrix[i * 4 + j]; }
+
+	inline Transform operator*(const Transform& other) const
+	{
+		return multiplyFromRight(other);
+	}
+
+	inline Transform& operator*=(const Transform& other)
+	{
+		*this = multiplyFromRight(other);
+		return *this;
+	}
+
+	static Transform fromIdentity();
+	static Transform fromTranslation(const Vector& delta);
+	static Transform fromScale(const Vector& scale);
+	static Transform fromRotation(const Vector& axis, Number angle);
+	static Transform fromLookAt(const Vector& origin, const Vector& target, const Vector& up);
+
+private:
+	inline Transform() = default;
+	inline explicit Transform(const std::array<float, 4 * 4>& arr)
+		: matrix(arr)
+	{
+	}
+
+	Transform multiplyFromRight(const Transform& other) const;
 };
 
 // --------------- RGB
@@ -259,7 +287,7 @@ public:
 		return p;
 	}
 
-	inline const Transform& getTransform(const Transform& def = Transform(), bool* ok = nullptr) const
+	inline const Transform& getTransform(const Transform& def = Transform::fromIdentity(), bool* ok = nullptr) const
 	{
 		if (mType == PT_TRANSFORM) {
 			if (ok)

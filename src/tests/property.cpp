@@ -12,7 +12,7 @@ TEST_CASE("Property Construction", "[property]")
 	REQUIRE(Property::fromBool(false).type() == PT_BOOL);
 	REQUIRE(Property::fromVector(Vector(0, 0, 0)).type() == PT_VECTOR);
 	REQUIRE(Property::fromRGB(RGB(0, 0, 0)).type() == PT_RGB);
-	REQUIRE(Property::fromTransform(Transform()).type() == PT_TRANSFORM);
+	REQUIRE(Property::fromTransform(Transform::fromIdentity()).type() == PT_TRANSFORM);
 	REQUIRE(Property::fromString("").type() == PT_STRING);
 	REQUIRE(Property::fromSpectrum(Spectrum()).type() == PT_SPECTRUM);
 }

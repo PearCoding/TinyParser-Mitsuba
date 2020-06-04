@@ -6,8 +6,41 @@
 #include <tinyxml2.h>
 
 namespace TPM_NAMESPACE {
+template <typename T, typename Func>
+inline static int _parseScalars(const std::string& str, T* numbers, int amount, Func func)
+{
+	size_t offset = 0;
+	int counter	  = 0;
+	for (counter = 0; counter < amount && offset < str.size(); ++counter) {
+		try {
+			size_t off;
+			numbers[counter] = func(str.substr(offset), &off);
+			offset += off;
+			if (offset >= str.size())
+				return counter + 1;
+			if (std::ispunct(str[offset]))
+				offset += 1;
+		} catch (...) {
+			return counter;
+		}
+	}
 
-static void parseVersion(const char* v, int& major, int& minor, int& patch)
+	return counter;
+}
+
+inline static Integer _parseInteger(const std::string& str, Integer* numbers, int amount)
+{
+	return _parseScalars(str, numbers, amount,
+						 [](const std::string& s, size_t* idx) { return (Integer)std::stoll(s, idx); });
+}
+
+inline static int _parseNumber(const std::string& str, Number* numbers, int amount)
+{
+	return _parseScalars(str, numbers, amount,
+						 [](const std::string& s, size_t* idx) { return std::stof(s, idx); });
+}
+
+static void _parseVersion(const char* v, int& major, int& minor, int& patch)
 {
 	major = 0;
 	minor = 6;
@@ -38,27 +71,40 @@ static void parseVersion(const char* v, int& major, int& minor, int& patch)
 	patch = std::stoi(version.substr(s2 + 1));
 }
 
+static std::string _unpackValues(const char* str, const ArgumentContainer& cnt)
+{
+	std::string unpackedStr;
+	for (int i = 0; str[i];) {
+		if (str[i] == '$') {
+			std::string variable;
+			++i;
+			for (; str[i] && std::isalnum(str[i]); ++i) {
+				variable += str[i];
+			}
+			if (!variable.empty()) {
+				if (!cnt.count(variable))
+					throw std::runtime_error("Unknown variable " + variable);
+
+				unpackedStr += cnt.at(variable);
+			}
+		} else {
+			unpackedStr += str[i];
+			++i;
+		}
+	}
+	return unpackedStr;
+}
+
 class IDContainer {
 public:
-	inline void registerID(const std::string& id, const std::shared_ptr<Entity>& entity)
+	inline void registerID(const std::string& id, const std::shared_ptr<Object>& entity)
 	{
 		mMap[id] = entity;
 	}
 
 	inline bool hasID(const std::string& id) const { return mMap.count(id) > 0; }
 
-	inline std::shared_ptr<BSDF> getBSDF(const std::string& id) const { return std::static_pointer_cast<BSDF>(getByType(id, ET_BSDF)); }
-	inline std::shared_ptr<Emitter> getEmitter(const std::string& id) const { return std::static_pointer_cast<Emitter>(getByType(id, ET_EMITTER)); }
-	inline std::shared_ptr<Film> getFilm(const std::string& id) const { return std::static_pointer_cast<Film>(getByType(id, ET_FILM)); }
-	inline std::shared_ptr<Integrator> getIntegrator(const std::string& id) const { return std::static_pointer_cast<Integrator>(getByType(id, ET_INTEGRATOR)); }
-	inline std::shared_ptr<RFilter> getRFilter(const std::string& id) const { return std::static_pointer_cast<RFilter>(getByType(id, ET_RFILTER)); }
-	inline std::shared_ptr<Sampler> getSampler(const std::string& id) const { return std::static_pointer_cast<Sampler>(getByType(id, ET_SAMPLER)); }
-	inline std::shared_ptr<Sensor> getSensor(const std::string& id) const { return std::static_pointer_cast<Sensor>(getByType(id, ET_SENSOR)); }
-	inline std::shared_ptr<Shape> getShape(const std::string& id) const { return std::static_pointer_cast<Shape>(getByType(id, ET_SHAPE)); }
-	inline std::shared_ptr<Texture> getTexture(const std::string& id) const { return std::static_pointer_cast<Texture>(getByType(id, ET_TEXTURE)); }
-
-private:
-	inline std::shared_ptr<Entity> getByType(const std::string& id, EntityType type) const
+	inline std::shared_ptr<Object> getByType(const std::string& id, ObjectType type) const
 	{
 		if (!mMap.count(id))
 			return nullptr;
@@ -69,12 +115,371 @@ private:
 		return mMap.at(id);
 	}
 
-	std::unordered_map<std::string, std::shared_ptr<Entity>> mMap;
+	inline void makeAlias(const std::string& id, const std::string& as)
+	{
+		if (!mMap.count(id))
+			return;
+
+		mMap[as] = mMap.at(id);
+	}
+
+private:
+	std::unordered_map<std::string, std::shared_ptr<Object>> mMap;
 };
+
+// Object type to parser flag
+#define OT_PF(x) (1 << (x))
+
+enum ParseFlags {
+	PF_BSDF		  = OT_PF(OT_BSDF),
+	PF_EMITTER	  = OT_PF(OT_EMITTER),
+	PF_FILM		  = OT_PF(OT_FILM),
+	PF_INTEGRATOR = OT_PF(OT_INTEGRATOR),
+	PF_MEDIUM	  = OT_PF(OT_MEDIUM),
+	PF_PHASE	  = OT_PF(OT_PHASE),
+	PF_RFILTER	  = OT_PF(OT_RFILTER),
+	PF_SAMPLER	  = OT_PF(OT_SAMPLER),
+	PF_SENSOR	  = OT_PF(OT_SENSOR),
+	PF_SHAPE	  = OT_PF(OT_SHAPE),
+	PF_SUBSURFACE = OT_PF(OT_SUBSURFACE),
+	PF_TEXTURE	  = OT_PF(OT_TEXTURE),
+	PF_VOLUME	  = OT_PF(OT_VOLUME),
+
+	PF_REFERENCE = OT_PF(_OT_COUNT + 0),
+	PF_DEFAULT	 = OT_PF(_OT_COUNT + 1),
+	PF_ALIAS	 = OT_PF(_OT_COUNT + 2),
+	PF_PARAMETER = OT_PF(_OT_COUNT + 3),
+	PF_INCLUDE	 = OT_PF(_OT_COUNT + 4),
+	PF_NULL		 = OT_PF(_OT_COUNT + 5),
+
+	// Compositions extracted from the official schema
+	PF_C_OBJECTGROUP = PF_PARAMETER | PF_DEFAULT,
+	PF_C_BSDF		 = PF_C_OBJECTGROUP | PF_PHASE | PF_TEXTURE | PF_BSDF | PF_REFERENCE,
+	PF_C_EMITTER	 = PF_C_OBJECTGROUP | PF_TEXTURE | PF_EMITTER | PF_MEDIUM | PF_REFERENCE,
+	PF_C_FILM		 = PF_C_OBJECTGROUP | PF_RFILTER,
+	PF_C_INTEGRATOR	 = PF_C_OBJECTGROUP | PF_INTEGRATOR | PF_SAMPLER,
+	PF_C_MEDIUM		 = PF_C_OBJECTGROUP | PF_SHAPE | PF_VOLUME | PF_PHASE,
+	PF_C_PHASE		 = PF_C_OBJECTGROUP | PF_PHASE,
+	PF_C_SCENE		 = PF_C_OBJECTGROUP | PF_ALIAS | PF_SENSOR | PF_TEXTURE | PF_BSDF | PF_SUBSURFACE | PF_INTEGRATOR | PF_EMITTER | PF_SHAPE | PF_MEDIUM | PF_PHASE | PF_INCLUDE | PF_NULL,
+	PF_C_SENSOR		 = PF_C_OBJECTGROUP | PF_SENSOR | PF_FILM | PF_MEDIUM | PF_REFERENCE,
+	PF_C_SHAPE		 = PF_C_OBJECTGROUP | PF_BSDF | PF_SUBSURFACE | PF_SENSOR | PF_EMITTER | PF_SHAPE | PF_MEDIUM | PF_TEXTURE | PF_RFILTER | PF_REFERENCE,
+	PF_C_SUBSURFACE	 = PF_C_OBJECTGROUP | PF_PHASE | PF_BSDF,
+	PF_C_TEXTURE	 = PF_C_OBJECTGROUP | PF_TEXTURE | PF_RFILTER | PF_REFERENCE,
+	PF_C_VOLUME		 = PF_C_OBJECTGROUP | PF_VOLUME,
+};
+
+static Property parseInteger(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto attrib = element->FindAttribute("value");
+	if (!attrib)
+		return Property();
+
+	std::string valueStr = _unpackValues(attrib->Value(), cnt);
+
+	Integer value;
+	if (_parseInteger(valueStr, &value, 1) != 1)
+		return Property();
+
+	return Property::fromInteger(value);
+}
+
+static Property parseFloat(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto attrib = element->FindAttribute("value");
+	if (!attrib)
+		return Property();
+
+	std::string valueStr = _unpackValues(attrib->Value(), cnt);
+
+	Number value;
+	if (_parseNumber(valueStr, &value, 1) != 1)
+		return Property();
+
+	return Property::fromNumber(value);
+}
+
+static Property parseVector(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto attrib = element->FindAttribute("value");
+	if (!attrib) { // Try legacy way
+		auto xA = element->FindAttribute("x");
+		auto yA = element->FindAttribute("y");
+		auto zA = element->FindAttribute("z");
+
+		if (!xA || !yA || !zA)
+			return Property();
+
+		std::string xStr = _unpackValues(xA->Value(), cnt);
+		std::string yStr = _unpackValues(yA->Value(), cnt);
+		std::string zStr = _unpackValues(zA->Value(), cnt);
+
+		float x, y, z;
+		if (_parseNumber(xStr, &x, 1) != 1)
+			return Property();
+		if (_parseNumber(yStr, &y, 1) != 1)
+			return Property();
+		if (_parseNumber(zStr, &z, 1) != 1)
+			return Property();
+
+		return Property::fromVector(Vector(x, y, z));
+	} else {
+		std::string valueStr = _unpackValues(attrib->Value(), cnt);
+
+		Number value[3];
+
+		int i = _parseNumber(valueStr, &value[0], 3);
+		if (i <= 0)
+			return Property();
+
+		for (int j = i; j < 3; ++j)
+			value[j] = 0.0f;
+
+		return Property::fromVector(Vector(value[0], value[1], value[2]));
+	}
+}
+
+static Property parseBool(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto attrib = element->FindAttribute("value");
+	if (!attrib)
+		return Property();
+
+	const auto valueStr = _unpackValues(attrib->Value(), cnt);
+	if (valueStr == "true")
+		return Property::fromBool(true);
+	else if (valueStr == "false")
+		return Property::fromBool(false);
+	else
+		return Property();
+}
+
+static Property parseRGB(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto attrib = element->FindAttribute("value");
+	if (!attrib)
+		return Property();
+
+	auto intent = element->Attribute("intent");
+
+	// TODO
+	(void)intent;
+	(void)cnt;
+
+	return Property();
+}
+
+static Property parseSpectrum(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto intent = element->Attribute("intent");
+	(void)intent;
+
+	auto filename = element->Attribute("filename");
+	if (filename) { // Load from .spd files!
+		// TODO
+		return Property();
+	} else {
+		auto value = element->Attribute("value");
+		if (!value)
+			return Property();
+
+		const auto valueStr = _unpackValues(value, cnt);
+
+		// TODO Parse string
+		return Property();
+	}
+}
+
+static Property parseBlackbody(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto tempA = element->Attribute("temperature");
+	if (!tempA)
+		return Property();
+
+	std::string tempStr = _unpackValues(tempA, cnt);
+
+	Number temp;
+	if (_parseNumber(tempStr, &temp, 1) != 1)
+		return Property();
+
+	Number scale = 1.0f;
+	auto scaleA	 = element->Attribute("scale");
+	if (scaleA) {
+		std::string scaleStr = _unpackValues(scaleA, cnt);
+
+		if (_parseNumber(scaleStr, &scale, 1) != 1)
+			return Property();
+	}
+
+	return Property::fromBlackbody(Blackbody(temp, scale));
+}
+
+static Property parseString(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto attrib = element->FindAttribute("value");
+	if (!attrib)
+		return Property();
+	return Property::fromString(_unpackValues(attrib->Value(), cnt));
+}
+
+static Property parseTransform(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	// TODO
+	(void)cnt;
+	(void)element;
+	return Property();
+}
+
+static Property parseAnimation(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	// TODO
+	(void)cnt;
+	(void)element;
+	return Property();
+}
+
+using PropertyParseCallback = Property (*)(const ArgumentContainer&, const tinyxml2::XMLElement*);
+
+static const struct {
+	const char* Name;
+	PropertyParseCallback Callback;
+} _propertyParseElement[] = {
+	{ "integer", parseInteger },
+	{ "float", parseFloat },
+	{ "vector", parseVector },
+	{ "point", parseVector },
+	{ "bool", parseBool },
+	{ "string", parseString },
+	{ "rgb", parseRGB },
+	{ "spectrum", parseSpectrum },
+	{ "blackbody", parseBlackbody },
+	{ "transform", parseTransform },
+	{ "animation", parseAnimation },
+	{ nullptr, nullptr }
+};
+
+bool parseParameter(Object* obj, const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto name = element->Attribute("name");
+	if (!name)
+		return false;
+
+	for (int i = 0; _propertyParseElement[i].Name; ++i) {
+		if (strcmp(element->Name(), _propertyParseElement[i].Name) == 0) {
+			auto prop = _propertyParseElement[i].Callback(cnt, element);
+			if (prop.isValid())
+				obj->setProperty(name, prop);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static void handleAlias(IDContainer& idcontainer, const tinyxml2::XMLElement* element)
+{
+	auto id = element->Attribute("id");
+	auto as = element->Attribute("as");
+
+	if (!id || !as)
+		throw std::runtime_error("Invalid alias element");
+
+	if (!idcontainer.hasID(id))
+		throw std::runtime_error("Unknown id " + std::string(id));
+
+	if (idcontainer.hasID(as))
+		throw std::runtime_error("Id " + std::string(as) + " already existent");
+
+	idcontainer.makeAlias(id, as);
+}
+
+static void handleDefault(ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+{
+	auto name  = element->Attribute("name");
+	auto value = element->Attribute("value");
+
+	if (!name || !value)
+		throw std::runtime_error("Invalid default element");
+
+	if (!cnt.count(name))
+		cnt[name] = value;
+}
+
+static const struct {
+	const char* Name;
+	ObjectType Type;
+	int Flags;
+} _parseElements[] = {
+	{ "bsdf", OT_BSDF, PF_C_BSDF },
+	{ "emitter", OT_EMITTER, PF_C_EMITTER },
+	{ "film", OT_FILM, PF_C_FILM },
+	{ "integrator", OT_INTEGRATOR, PF_C_INTEGRATOR },
+	{ "medium", OT_MEDIUM, PF_C_MEDIUM },
+	{ "phase", OT_PHASE, PF_C_PHASE },
+	{ "sensor", OT_SENSOR, PF_C_SENSOR },
+	{ "shape", OT_SHAPE, PF_C_SHAPE },
+	{ "subsurface", OT_SUBSURFACE, PF_C_SUBSURFACE },
+	{ "texture", OT_TEXTURE, PF_C_TEXTURE },
+	{ "volume", OT_VOLUME, PF_C_VOLUME },
+	{ nullptr, ObjectType(0), 0 }
+};
+
+static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, IDContainer& ids, const tinyxml2::XMLElement* element, int flags)
+{
+	// Copy container to make sure recursive elements do not overwrite it
+	ArgumentContainer cnt = prev_cnt;
+
+	for (auto childElement = element->FirstChildElement();
+		 childElement;
+		 childElement = childElement->NextSiblingElement()) {
+
+		if ((flags & PF_PARAMETER) && parseParameter(obj, cnt, childElement))
+			continue;
+
+		if ((flags & PF_REFERENCE) && strcmp(childElement->Name(), "ref") == 0) {
+			// Handle reference
+		} else if ((flags & PF_DEFAULT) && strcmp(childElement->Name(), "default") == 0) {
+			handleDefault(cnt, childElement);
+		} else if ((flags & PF_INCLUDE) && strcmp(childElement->Name(), "include") == 0) {
+			// Handle include
+		} else if ((flags & PF_ALIAS) && strcmp(childElement->Name(), "alias") == 0) {
+			handleAlias(ids, childElement);
+		} else if ((flags & PF_NULL) && strcmp(childElement->Name(), "null") == 0) {
+			// Handle null
+		} else {
+			std::shared_ptr<Object> child;
+
+			for (int i = 0; _parseElements[i].Name; ++i) {
+				if ((OT_PF(_parseElements[i].Type) & flags)
+					&& strcmp(childElement->Name(), _parseElements[i].Name) == 0) {
+					child = std::make_shared<Object>(_parseElements[i].Type);
+					parseObject(child.get(), cnt, ids, childElement, _parseElements[i].Flags);
+					break;
+				}
+			}
+
+			if (child) {
+				const char* id = childElement->Attribute("id");
+				if (id) {
+					if (!ids.hasID(id)) {
+						ids.registerID(id, child);
+					} else {
+						// TODO: Warning
+					}
+				}
+
+				obj->addObject(child);
+			} else {
+				std::stringstream stream;
+				stream << "Found invalid tag '" << childElement->Name() << "'";
+				throw std::runtime_error(stream.str());
+			}
+		}
+	}
+}
 
 class SceneLoader {
 public:
-	static Scene loadFromXML(const tinyxml2::XMLDocument& xml)
+	static Scene loadFromXML(const ArgumentContainer& cnt, const tinyxml2::XMLDocument& xml)
 	{
 		const auto rootScene = xml.RootElement();
 		if (strcmp(rootScene->Name(), "scene") != 0)
@@ -84,128 +489,41 @@ public:
 		IDContainer idcontainer;
 
 		try {
-			parseVersion(rootScene->Attribute("version"), scene.mVersionMajor, scene.mVersionMinor, scene.mVersionPatch);
+			_parseVersion(rootScene->Attribute("version"), scene.mVersionMajor, scene.mVersionMinor, scene.mVersionPatch);
 		} catch (...) {
 			throw std::runtime_error("Invalid version element");
 		}
 
-		for (auto child = rootScene->FirstChildElement();
-			 child;
-			 child = child->NextSiblingElement()) {
-			if (strcmp(child->Name(), "shape") == 0) {
-				auto shape = parseShape(idcontainer, child);
-				if (shape)
-					scene.mEntities.push_back(std::move(shape));
-			} else if (strcmp(child->Name(), "bsdf") == 0) {
-				parseBsdf(idcontainer, child);
-			} else if (strcmp(child->Name(), "integrator") == 0) {
-				auto integrator = parseIntegrator(idcontainer, child);
-				if (integrator)
-					scene.mEntities.push_back(std::move(integrator));
-			} else if (strcmp(child->Name(), "sensor") == 0) {
-				auto sensor = parseSensor(idcontainer, child);
-				if (sensor)
-					scene.mEntities.push_back(std::move(sensor));
-			} else if (strcmp(child->Name(), "texture") == 0) {
-				parseTexture(idcontainer, child);
-			} else if (strcmp(child->Name(), "emitter") == 0) {
-				auto emitter = parseEmitter(idcontainer, child);
-				if (emitter)
-					scene.mEntities.push_back(std::move(emitter));
-			} else {
-				std::stringstream stream;
-				stream << "Found invalid tag '" << child->Name() << "'";
-				throw std::runtime_error(stream.str());
-			}
-		}
+		parseObject(&scene, cnt, idcontainer, rootScene, PF_C_SCENE);
 
 		return scene;
 	}
-
-	static void handleID(IDContainer& idcontainer, const std::shared_ptr<Entity>& entity, const tinyxml2::XMLElement* element)
-	{
-		const char* id = element->Attribute("id");
-		if (!id)
-			return;
-
-		// TODO: Warning if already in use?
-
-		idcontainer.registerID(id, entity);
-	}
-
-	static std::shared_ptr<Shape> parseShape(IDContainer& /*idcontainer*/, const tinyxml2::XMLElement* /*element*/)
-	{
-		// TODO
-		return nullptr;
-	}
-
-	static std::shared_ptr<BSDF> parseBsdf(IDContainer& /*idcontainer*/, const tinyxml2::XMLElement* /*element*/)
-	{
-		// TODO
-		return nullptr;
-	}
-
-	static std::shared_ptr<Integrator> parseIntegrator(IDContainer& /*idcontainer*/, const tinyxml2::XMLElement* /*element*/)
-	{
-		// TODO
-		return nullptr;
-	}
-
-	static std::shared_ptr<Sensor> parseSensor(IDContainer& /*idcontainer*/, const tinyxml2::XMLElement* /*element*/)
-	{
-		// TODO
-		return nullptr;
-	}
-
-	static std::shared_ptr<Texture> parseTexture(IDContainer& /*idcontainer*/, const tinyxml2::XMLElement* /*element*/)
-	{
-		// TODO
-		return nullptr;
-	}
-
-	static std::shared_ptr<Film> parseFilm(IDContainer& /*idcontainer*/, const tinyxml2::XMLElement* /*element*/)
-	{
-		// TODO
-		return nullptr;
-	}
-
-	static std::shared_ptr<RFilter> parseRFilter(IDContainer& /*idcontainer*/, const tinyxml2::XMLElement* /*element*/)
-	{
-		// TODO
-		return nullptr;
-	}
-
-	static std::shared_ptr<Emitter> parseEmitter(IDContainer& /*idcontainer*/, const tinyxml2::XMLElement* /*element*/)
-	{
-		// TODO
-		return nullptr;
-	}
 };
 
-Scene Scene::loadFromFile(const char* path)
+Scene Scene::loadFromFile(const char* path, const ArgumentContainer& cnt)
 {
 	tinyxml2::XMLDocument xml;
 	xml.LoadFile(path);
-	return SceneLoader::loadFromXML(xml);
+	return SceneLoader::loadFromXML(cnt, xml);
 }
 
-Scene Scene::loadFromString(const char* str)
+Scene Scene::loadFromString(const char* str, const ArgumentContainer& cnt)
 {
 	tinyxml2::XMLDocument xml;
 	xml.Parse(str);
-	return SceneLoader::loadFromXML(xml);
+	return SceneLoader::loadFromXML(cnt, xml);
 }
 
-/*Scene Scene::loadFromStream(std::istream& stream)
+/*Scene Scene::loadFromStream(std::istream& stream, const ArgumentContainer& cnt)
 {
 	// TODO
 	return Scene();
 }*/
 
-Scene Scene::loadFromMemory(const uint8_t* data, size_t size)
+Scene Scene::loadFromMemory(const uint8_t* data, size_t size, const ArgumentContainer& cnt)
 {
 	tinyxml2::XMLDocument xml;
 	xml.Parse(reinterpret_cast<const char*>(data), size);
-	return SceneLoader::loadFromXML(xml);
+	return SceneLoader::loadFromXML(cnt, xml);
 }
 } // namespace TPM_NAMESPACE

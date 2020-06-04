@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -51,29 +52,35 @@ using Number = float;
 using Integer = int64_t;
 
 // --------------- Enums
-enum EntityType {
-	ET_BSDF = 0,
-	ET_SHAPE,
-	ET_INTEGRATOR,
-	ET_SENSOR,
-	ET_EMITTER,
-	ET_FILM,
-	ET_TEXTURE,
-	ET_SAMPLER,
-	ET_RFILTER
+enum ObjectType {
+	OT_SCENE = 0,
+	OT_BSDF,
+	OT_EMITTER,
+	OT_FILM,
+	OT_INTEGRATOR,
+	OT_MEDIUM,
+	OT_PHASE,
+	OT_RFILTER,
+	OT_SAMPLER,
+	OT_SENSOR,
+	OT_SHAPE,
+	OT_SUBSURFACE,
+	OT_TEXTURE,
+	OT_VOLUME,
+	_OT_COUNT
 };
 
 enum PropertyType {
 	PT_NONE = 0,
+	PT_BLACKBODY, // Uses Number
+	PT_BOOL,
 	PT_INTEGER,
 	PT_NUMBER,
-	PT_BOOL,
-	PT_STRING,
-	PT_POINT,
-	PT_VECTOR,
-	PT_TRANSFORM,
 	PT_RGB,
-	PT_SPECTRUM
+	PT_SPECTRUM,
+	PT_STRING,
+	PT_TRANSFORM,
+	PT_VECTOR,
 };
 
 // --------------- Vector/Points
@@ -97,7 +104,11 @@ inline TPM_NODISCARD bool operator!=(const Vector& a, const Vector& b)
 using Point = Vector;
 
 // --------------- Transform
-class TPM_LIB Transform {
+struct TPM_LIB Transform {
+	std::array<float, 4 * 4> matrix; // Row major
+
+	inline float& operator()(int i, int j) { return matrix[i * 4 + j]; }
+	inline float operator()(int i, int j) const { return matrix[i * 4 + j]; }
 };
 
 // --------------- RGB
@@ -136,6 +147,24 @@ private:
 	std::vector<int> mWavelengths;
 	std::vector<Number> mWeights;
 };
+
+// --------------- Blackbody
+struct TPM_LIB Blackbody {
+	Number temperature, scale;
+	inline Blackbody(Number temperature, Number scale)
+		: temperature(temperature)
+		, scale(scale)
+	{
+	}
+};
+inline TPM_NODISCARD bool operator==(const Blackbody& a, const Blackbody& b)
+{
+	return a.temperature == b.temperature && a.scale == b.scale;
+}
+inline TPM_NODISCARD bool operator!=(const Blackbody& a, const Blackbody& b)
+{
+	return !(a == b);
+}
 
 // --------------- Property
 class TPM_LIB Property {
@@ -208,25 +237,6 @@ public:
 	{
 		Property p(PT_BOOL);
 		p.mBool = b;
-		return p;
-	}
-
-	inline const Point& getPoint(const Point& def = Point(0, 0, 0), bool* ok = nullptr) const
-	{
-		if (mType == PT_POINT) {
-			if (ok)
-				*ok = true;
-			return mPoint;
-		} else {
-			if (ok)
-				*ok = false;
-			return def;
-		}
-	}
-	static TPM_NODISCARD inline Property fromPoint(const Point& v)
-	{
-		Property p(PT_POINT);
-		p.mPoint = v;
 		return p;
 	}
 
@@ -325,6 +335,25 @@ public:
 		return p;
 	}
 
+	inline Blackbody getBlackbody(const Blackbody& def = Blackbody(6504, 1), bool* ok = nullptr) const
+	{
+		if (mType == PT_BLACKBODY) {
+			if (ok)
+				*ok = true;
+			return mBlackbody;
+		} else {
+			if (ok)
+				*ok = false;
+			return def;
+		}
+	}
+	static TPM_NODISCARD inline Property fromBlackbody(const Blackbody& v)
+	{
+		Property p(PT_BLACKBODY);
+		p.mBlackbody = v;
+		return p;
+	}
+
 private:
 	inline explicit Property(PropertyType type)
 		: mType(type)
@@ -339,19 +368,24 @@ private:
 		Integer mInteger;
 		bool mBool;
 
-		Point mPoint;
 		Vector mVector;
 		Transform mTransform;
 		RGB mRGB;
+		Blackbody mBlackbody;
 	};
 	std::string mString;
 	Spectrum mSpectrum;
 };
 
-// --------------- Entity
-class TPM_LIB Entity {
+// --------------- Object
+class TPM_LIB Object {
 public:
-	inline TPM_NODISCARD EntityType type() const { return mType; }
+	inline explicit Object(ObjectType type)
+		: mType(type)
+	{
+	}
+
+	inline TPM_NODISCARD ObjectType type() const { return mType; }
 
 	inline TPM_NODISCARD Property property(const std::string& key) const
 	{
@@ -363,148 +397,49 @@ public:
 		mProperties[key] = prop;
 	}
 
-	inline TPM_NODISCARD Property& operator[](const std::string& key)
+	inline TPM_NODISCARD Property& operator[](const std::string& key) { return mProperties[key]; }
+
+	inline TPM_NODISCARD Property operator[](const std::string& key) const { return property(key); }
+
+	inline void addObject(const std::shared_ptr<Object>& obj)
 	{
-		return mProperties[key];
+		mChildren.push_back(obj);
 	}
 
-	inline TPM_NODISCARD Property operator[](const std::string& key) const
-	{
-		return property(key);
-	}
-
-protected:
-	inline explicit Entity(EntityType type)
-		: mType(type)
-	{
-	}
+	inline TPM_NODISCARD const std::vector<std::shared_ptr<Object>>& objects() const { return mChildren; }
 
 private:
-	EntityType mType;
+	ObjectType mType;
 	std::unordered_map<std::string, Property> mProperties;
+	std::vector<std::shared_ptr<Object>> mChildren;
 };
 
-// --------------- Predeclarations
-class BSDF;
-class Emitter;
-class Film;
-class Integrator;
-class RFilter;
-class Sampler;
-class Sensor;
-class Shape;
-class Texture;
-
-// --------------- BSDF
-class TPM_LIB BSDF : public Entity {
-public:
-	inline BSDF()
-		: Entity(ET_BSDF)
-	{
-	}
-};
-
-// --------------- Emitter
-class TPM_LIB Emitter : public Entity {
-public:
-	inline Emitter()
-		: Entity(ET_EMITTER)
-	{
-	}
-};
-
-// --------------- Film
-class TPM_LIB Film : public Entity {
-public:
-	inline Film()
-		: Entity(ET_FILM)
-	{
-	}
-};
-
-// --------------- Integrator
-class TPM_LIB Integrator : public Entity {
-public:
-	inline Integrator()
-		: Entity(ET_INTEGRATOR)
-	{
-	}
-};
-
-// --------------- RFilter
-class TPM_LIB RFilter : public Entity {
-public:
-	inline RFilter()
-		: Entity(ET_RFILTER)
-	{
-	}
-};
-
-// --------------- Sampler
-class TPM_LIB Sampler : public Entity {
-public:
-	inline Sampler()
-		: Entity(ET_SAMPLER)
-	{
-	}
-};
-
-// --------------- Sensor
-class TPM_LIB Sensor : public Entity {
-public:
-	inline Sensor()
-		: Entity(ET_SENSOR)
-	{
-	}
-};
-
-// --------------- Shape
-class TPM_LIB Shape : public Entity {
-public:
-	inline Shape()
-		: Entity(ET_SHAPE)
-	{
-	}
-
-	inline TPM_NODISCARD BSDF* bsdf() const { return mBSDF.get(); }
-	inline void setBSDF(const std::shared_ptr<BSDF>& bsdf) { mBSDF = bsdf; }
-
-private:
-	std::shared_ptr<BSDF> mBSDF;
-};
-
-// --------------- Texture
-class TPM_LIB Texture : public Entity {
-public:
-	inline Texture()
-		: Entity(ET_TEXTURE)
-	{
-	}
-};
+// --------------- ArgumentContainer
+using ArgumentContainer = std::unordered_map<std::string, std::string>;
 
 // --------------- Scene
-class TPM_LIB Scene {
+class TPM_LIB Scene : public Object {
 	friend class SceneLoader;
 
 public:
-	static inline TPM_NODISCARD Scene loadFromFile(const std::string& path)
+	static inline TPM_NODISCARD Scene loadFromFile(const std::string& path, const ArgumentContainer& cnt = ArgumentContainer())
 	{
-		return loadFromFile(path.c_str());
+		return loadFromFile(path.c_str(), cnt);
 	}
-	static inline TPM_NODISCARD Scene loadFromString(const std::string& str);
+	static inline TPM_NODISCARD Scene loadFromString(const std::string& str, const ArgumentContainer& cnt = ArgumentContainer());
 
 #ifdef TPM_HAS_STRING_VIEW
-	static inline TPM_NODISCARD Scene loadFromString(const std::string_view& str)
+	static inline TPM_NODISCARD Scene loadFromString(const std::string_view& str, const ArgumentContainer& cnt = ArgumentContainer())
 	{
-		return loadFromString(str.data(), str.size());
+		return loadFromString(str.data(), str.size(), cnt);
 	}
 #endif
 
 	// static TPM_NODISCARD Scene loadFromStream(std::istream& stream);
 
-	static TPM_NODISCARD Scene loadFromFile(const char* path);
-	static TPM_NODISCARD Scene loadFromString(const char* str);
-	static TPM_NODISCARD Scene loadFromMemory(const uint8_t* data, size_t size);
+	static TPM_NODISCARD Scene loadFromFile(const char* path, const ArgumentContainer& cnt = ArgumentContainer());
+	static TPM_NODISCARD Scene loadFromString(const char* str, const ArgumentContainer& cnt = ArgumentContainer());
+	static TPM_NODISCARD Scene loadFromMemory(const uint8_t* data, size_t size, const ArgumentContainer& cnt = ArgumentContainer());
 
 	Scene(const Scene& other) = default;
 	Scene(Scene&& other)	  = default;
@@ -517,12 +452,13 @@ public:
 	inline TPM_NODISCARD int versionPatch() const { return mVersionPatch; }
 
 private:
-	Scene() = default;
+	inline Scene()
+		: Object(OT_SCENE)
+	{
+	}
 
 	int mVersionMajor;
 	int mVersionMinor;
 	int mVersionPatch;
-
-	std::vector<std::shared_ptr<Entity>> mEntities;
 };
 } // namespace TPM_NAMESPACE

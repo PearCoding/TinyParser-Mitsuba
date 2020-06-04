@@ -10,7 +10,6 @@ TEST_CASE("Property Construction", "[property]")
 	REQUIRE(Property::fromNumber(Number(0)).type() == PT_NUMBER);
 	REQUIRE(Property::fromInteger(Integer(0)).type() == PT_INTEGER);
 	REQUIRE(Property::fromBool(false).type() == PT_BOOL);
-	REQUIRE(Property::fromPoint(Point(0, 0, 0)).type() == PT_POINT);
 	REQUIRE(Property::fromVector(Vector(0, 0, 0)).type() == PT_VECTOR);
 	REQUIRE(Property::fromRGB(RGB(0, 0, 0)).type() == PT_RGB);
 	REQUIRE(Property::fromTransform(Transform()).type() == PT_TRANSFORM);
@@ -23,7 +22,6 @@ TEST_CASE("Property Access", "[property]")
 	REQUIRE(Property::fromNumber(Number(1)).getNumber() == Number(1));
 	REQUIRE(Property::fromInteger(Integer(1)).getInteger() == Integer(1));
 	REQUIRE(Property::fromBool(true).getBool() == true);
-	REQUIRE(Property::fromPoint(Point(1, 0, 0)).getPoint() == Point(1, 0, 0));
 	REQUIRE(Property::fromVector(Vector(1, 0, 0)).getVector() == Vector(1, 0, 0));
 	REQUIRE(Property::fromRGB(RGB(1, 0, 0)).getRGB() == RGB(1, 0, 0));
 	//REQUIRE(Property::fromTransform(Transform()).getTransform() == Transform());

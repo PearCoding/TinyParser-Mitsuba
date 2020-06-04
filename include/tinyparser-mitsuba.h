@@ -109,15 +109,16 @@ using Point = Vector;
 // --------------- Transform
 /// The Transform structure is only for storage and internal calculations. Use a fully featured math library for your own calculations
 struct TPM_LIB Transform {
-	std::array<float, 4 * 4> matrix; // Row major
+	using Array = std::array<Number, 4 * 4>;
+	Array matrix; // Row major
 
-	inline explicit Transform(const std::array<float, 4 * 4>& arr)
+	inline explicit Transform(const Array& arr)
 		: matrix(arr)
 	{
 	}
 
-	inline float& operator()(int i, int j) { return matrix[i * 4 + j]; }
-	inline float operator()(int i, int j) const { return matrix[i * 4 + j]; }
+	inline Number& operator()(int i, int j) { return matrix[i * 4 + j]; }
+	inline Number operator()(int i, int j) const { return matrix[i * 4 + j]; }
 
 	inline Transform operator*(const Transform& other) const
 	{
@@ -486,33 +487,11 @@ private:
 	std::vector<std::shared_ptr<Object>> mChildren;
 };
 
-// --------------- ArgumentContainer
-using ArgumentContainer = std::unordered_map<std::string, std::string>;
-
 // --------------- Scene
 class TPM_LIB Scene : public Object {
-	friend class SceneLoader;
+	friend class InternalSceneLoader;
 
 public:
-	static inline TPM_NODISCARD Scene loadFromFile(const std::string& path, const ArgumentContainer& cnt = ArgumentContainer())
-	{
-		return loadFromFile(path.c_str(), cnt);
-	}
-	static inline TPM_NODISCARD Scene loadFromString(const std::string& str, const ArgumentContainer& cnt = ArgumentContainer());
-
-#ifdef TPM_HAS_STRING_VIEW
-	static inline TPM_NODISCARD Scene loadFromString(const std::string_view& str, const ArgumentContainer& cnt = ArgumentContainer())
-	{
-		return loadFromString(str.data(), str.size(), cnt);
-	}
-#endif
-
-	// static TPM_NODISCARD Scene loadFromStream(std::istream& stream);
-
-	static TPM_NODISCARD Scene loadFromFile(const char* path, const ArgumentContainer& cnt = ArgumentContainer());
-	static TPM_NODISCARD Scene loadFromString(const char* str, const ArgumentContainer& cnt = ArgumentContainer());
-	static TPM_NODISCARD Scene loadFromMemory(const uint8_t* data, size_t size, const ArgumentContainer& cnt = ArgumentContainer());
-
 	Scene(const Scene& other) = default;
 	Scene(Scene&& other)	  = default;
 
@@ -532,5 +511,44 @@ private:
 	int mVersionMajor;
 	int mVersionMinor;
 	int mVersionPatch;
+};
+
+// --------------- SceneLoader
+class TPM_LIB SceneLoader {
+public:
+	inline SceneLoader() = default;
+
+	inline TPM_NODISCARD Scene loadFromFile(const std::string& path)
+	{
+		return loadFromFile(path.c_str());
+	}
+	inline TPM_NODISCARD Scene loadFromString(const std::string& str);
+
+#ifdef TPM_HAS_STRING_VIEW
+	inline TPM_NODISCARD Scene loadFromString(const std::string_view& str)
+	{
+		return loadFromString(str.data(), str.size());
+	}
+#endif
+
+	// static TPM_NODISCARD Scene loadFromStream(std::istream& stream);
+
+	TPM_NODISCARD Scene loadFromFile(const char* path);
+	TPM_NODISCARD Scene loadFromString(const char* str);
+	TPM_NODISCARD Scene loadFromMemory(const uint8_t* data, size_t size);
+
+	inline void addLookupDir(const std::string& path)
+	{
+		mLookupPaths.push_back(path);
+	}
+
+	inline void addArgument(const std::string& key, const std::string& value)
+	{
+		mArguments[key] = value;
+	}
+
+private:
+	std::vector<std::string> mLookupPaths;
+	std::unordered_map<std::string, std::string> mArguments;
 };
 } // namespace TPM_NAMESPACE

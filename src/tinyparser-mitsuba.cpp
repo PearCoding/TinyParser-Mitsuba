@@ -1,12 +1,39 @@
 #include "tinyparser-mitsuba.h"
 
 #include <cmath>
+#include <fstream>
 #include <sstream>
 #include <stdexcept>
 
 #include <tinyxml2.h>
 
 namespace TPM_NAMESPACE {
+using LookupPaths		= std::vector<std::string>;
+using ArgumentContainer = std::unordered_map<std::string, std::string>;
+
+static inline bool doesFileExist(const std::string& fileName)
+{
+	return std::ifstream(fileName).good();
+}
+
+static inline std::string concactPaths(const std::string& a, const std::string& b)
+{
+	if (a.empty())
+		return b;
+	else if (b.empty())
+		return a;
+
+	if (a.back() != '/' && a.back() != '\\' && a.back() != b.front())
+		return a + '/' + b;
+	else
+		return a + b;
+}
+
+static inline std::string extractDirectoryOfPath(const std::string& str)
+{
+	size_t found = str.find_last_of("/\\");
+	return (found == std::string::npos) ? "" : str.substr(0, found);
+}
 
 static inline Vector normalize(const Vector& v)
 {
@@ -24,25 +51,25 @@ static inline Vector cross(const Vector& a, const Vector& b)
 // ------------ Transform
 Transform Transform::fromIdentity()
 {
-	return Transform({ Number(1), Number(0), Number(0), Number(0),
-					   Number(0), Number(1), Number(0), Number(0),
-					   Number(0), Number(0), Number(1), Number(0),
-					   Number(0), Number(0), Number(0), Number(1) });
+	return Transform(Transform::Array{ Number(1), Number(0), Number(0), Number(0),
+									   Number(0), Number(1), Number(0), Number(0),
+									   Number(0), Number(0), Number(1), Number(0),
+									   Number(0), Number(0), Number(0), Number(1) });
 }
 
 Transform Transform::fromTranslation(const Vector& delta)
 {
-	return Transform({ Number(1), Number(0), Number(0), delta.x,
-					   Number(0), Number(1), Number(0), delta.y,
-					   Number(0), Number(0), Number(1), delta.z,
-					   Number(0), Number(0), Number(0), Number(1) });
+	return Transform(Transform::Array{ Number(1), Number(0), Number(0), delta.x,
+									   Number(0), Number(1), Number(0), delta.y,
+									   Number(0), Number(0), Number(1), delta.z,
+									   Number(0), Number(0), Number(0), Number(1) });
 }
 Transform Transform::fromScale(const Vector& scale)
 {
-	return Transform({ scale.x, Number(0), Number(0), Number(0),
-					   Number(0), scale.y, Number(0), Number(0),
-					   Number(0), Number(0), scale.z, Number(0),
-					   Number(0), Number(0), Number(0), Number(1) });
+	return Transform(Transform::Array{ scale.x, Number(0), Number(0), Number(0),
+									   Number(0), scale.y, Number(0), Number(0),
+									   Number(0), Number(0), scale.z, Number(0),
+									   Number(0), Number(0), Number(0), Number(1) });
 }
 
 Transform Transform::fromRotation(const Vector& axis, Number angle)
@@ -52,10 +79,10 @@ Transform Transform::fromRotation(const Vector& axis, Number angle)
 	const auto ca	= std::cos(angle);
 	const auto nca	= Number(1) - ca;
 
-	return Transform({ ca + aa.x * aa.x * nca, aa.x * aa.y * nca - aa.z * sa, aa.x * aa.z * nca + aa.y * sa, Number(0),
-					   aa.y * aa.x * nca + aa.z * sa, ca + aa.y * aa.y * nca, aa.y * aa.z * nca - aa.x * sa, Number(0),
-					   aa.z * aa.x * nca - aa.y * sa, aa.z * aa.y * nca + aa.x * sa, ca + aa.z * aa.z * nca, Number(0),
-					   Number(0), Number(0), Number(0), Number(1) });
+	return Transform(Transform::Array{ ca + aa.x * aa.x * nca, aa.x * aa.y * nca - aa.z * sa, aa.x * aa.z * nca + aa.y * sa, Number(0),
+									   aa.y * aa.x * nca + aa.z * sa, ca + aa.y * aa.y * nca, aa.y * aa.z * nca - aa.x * sa, Number(0),
+									   aa.z * aa.x * nca - aa.y * sa, aa.z * aa.y * nca + aa.x * sa, ca + aa.z * aa.z * nca, Number(0),
+									   Number(0), Number(0), Number(0), Number(1) });
 }
 
 Transform Transform::fromLookAt(const Vector& origin, const Vector& target, const Vector& up)
@@ -64,10 +91,10 @@ Transform Transform::fromLookAt(const Vector& origin, const Vector& target, cons
 	const Vector left	= normalize(cross(up, fwd));
 	const Vector alt_up = normalize(cross(fwd, left));
 
-	return Transform({ left.x, alt_up.x, fwd.x, origin.x,
-					   left.y, alt_up.y, fwd.y, origin.y,
-					   left.z, alt_up.z, fwd.z, origin.z,
-					   Number(0), Number(0), Number(0), Number(1) });
+	return Transform(Transform::Array{ left.x, alt_up.x, fwd.x, origin.x,
+									   left.y, alt_up.y, fwd.y, origin.y,
+									   left.z, alt_up.z, fwd.z, origin.z,
+									   Number(0), Number(0), Number(0), Number(1) });
 }
 
 Transform Transform::multiplyFromRight(const Transform& other) const
@@ -382,7 +409,7 @@ static Property parseBlackbody(const ArgumentContainer& cnt, const tinyxml2::XML
 	if (!unpackNumber(element->Attribute("temperature"), cnt, &temp))
 		return Property();
 
-	if (!unpackNumber(element->Attribute("scale"), cnt, &temp))
+	if (!unpackNumber(element->Attribute("scale"), cnt, &scale))
 		scale = Number(1);
 
 	return Property::fromBlackbody(Blackbody(temp, scale));
@@ -488,24 +515,24 @@ Transform parseTransformMatrix(const ArgumentContainer& cnt, const tinyxml2::XML
 
 	// Row-Major
 	if (c == 9) {
-		return Transform({ tmp[0], tmp[1], tmp[2], Number(0),
-						   tmp[3], tmp[4], tmp[5], Number(0),
-						   tmp[6], tmp[7], tmp[8], Number(0),
-						   Number(0), Number(0), Number(0), Number(1) });
+		return Transform(Transform::Array{ tmp[0], tmp[1], tmp[2], Number(0),
+										   tmp[3], tmp[4], tmp[5], Number(0),
+										   tmp[6], tmp[7], tmp[8], Number(0),
+										   Number(0), Number(0), Number(0), Number(1) });
 	}
 #ifndef TPM_NO_EXTENSIONS
 	else if (c == 12) { // Official mitsuba does not support this
-		return Transform({ tmp[0], tmp[1], tmp[2], tmp[3],
-						   tmp[4], tmp[5], tmp[6], tmp[7],
-						   tmp[8], tmp[9], tmp[10], tmp[11],
-						   Number(0), Number(0), Number(0), Number(1) });
+		return Transform(Transform::Array{ tmp[0], tmp[1], tmp[2], tmp[3],
+										   tmp[4], tmp[5], tmp[6], tmp[7],
+										   tmp[8], tmp[9], tmp[10], tmp[11],
+										   Number(0), Number(0), Number(0), Number(1) });
 	}
 #endif
 	else if (c == 16) {
-		return Transform({ tmp[0], tmp[1], tmp[2], tmp[3],
-						   tmp[4], tmp[5], tmp[6], tmp[7],
-						   tmp[8], tmp[9], tmp[10], tmp[11],
-						   tmp[12], tmp[13], tmp[14], tmp[15] });
+		return Transform(Transform::Array{ tmp[0], tmp[1], tmp[2], tmp[3],
+										   tmp[4], tmp[5], tmp[6], tmp[7],
+										   tmp[8], tmp[9], tmp[10], tmp[11],
+										   tmp[12], tmp[13], tmp[14], tmp[15] });
 	}
 
 	return Transform::fromIdentity();
@@ -661,6 +688,42 @@ static void handleReference(Object* obj, const ArgumentContainer& cnt, const IDC
 		throw std::runtime_error("Id " + ref_id + " not of allowed type");
 }
 
+static void parseObject(Object*, const ArgumentContainer&, const LookupPaths&, IDContainer&, const tinyxml2::XMLElement*, int);
+static void handleInclude(Object* obj, const ArgumentContainer& cnt, const LookupPaths& paths, IDContainer& ids,
+						  const tinyxml2::XMLElement* element)
+{
+	auto filename = element->Attribute("filename");
+	if (!filename)
+		throw std::runtime_error("Invalid include element");
+
+	std::string full_path;
+	for (const auto& dir : paths) {
+		const std::string p = concactPaths(dir, filename);
+		if (doesFileExist(p)) {
+			full_path = p;
+			break;
+		}
+	}
+
+	if (full_path.empty() && doesFileExist(filename))
+		full_path = filename;
+	else
+		throw std::runtime_error("File " + std::string(filename) + " not found");
+
+	// Load xml
+	tinyxml2::XMLDocument xml;
+	xml.LoadFile(full_path.c_str());
+
+	const auto rootScene = xml.RootElement();
+	if (strcmp(rootScene->Name(), "scene") != 0)
+		throw std::runtime_error("Expected root element to be 'scene'");
+
+	// Ignore version
+
+	// Parse as scene
+	parseObject(obj, cnt, paths, ids, rootScene, PF_C_SCENE);
+}
+
 static const struct {
 	const char* Name;
 	ObjectType Type;
@@ -680,7 +743,7 @@ static const struct {
 	{ nullptr, ObjectType(0), 0 }
 };
 
-static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, IDContainer& ids, const tinyxml2::XMLElement* element, int flags)
+static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, const LookupPaths& paths, IDContainer& ids, const tinyxml2::XMLElement* element, int flags)
 {
 	// Copy container to make sure recursive elements do not overwrite it
 	ArgumentContainer cnt = prev_cnt;
@@ -697,7 +760,7 @@ static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, IDContai
 		} else if ((flags & PF_DEFAULT) && strcmp(childElement->Name(), "default") == 0) {
 			handleDefault(cnt, childElement);
 		} else if ((flags & PF_INCLUDE) && strcmp(childElement->Name(), "include") == 0) {
-			// Handle include
+			handleInclude(obj, cnt, paths, ids, element);
 		} else if ((flags & PF_ALIAS) && strcmp(childElement->Name(), "alias") == 0) {
 			handleAlias(ids, childElement);
 		} else if ((flags & PF_NULL) && strcmp(childElement->Name(), "null") == 0) {
@@ -709,7 +772,7 @@ static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, IDContai
 				if ((OT_PF(_parseElements[i].Type) & flags)
 					&& strcmp(childElement->Name(), _parseElements[i].Name) == 0) {
 					child = std::make_shared<Object>(_parseElements[i].Type);
-					parseObject(child.get(), cnt, ids, childElement, _parseElements[i].Flags);
+					parseObject(child.get(), cnt, paths, ids, childElement, _parseElements[i].Flags);
 					break;
 				}
 			}
@@ -734,9 +797,9 @@ static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, IDContai
 	}
 }
 
-class SceneLoader {
+class InternalSceneLoader {
 public:
-	static Scene loadFromXML(const ArgumentContainer& cnt, const tinyxml2::XMLDocument& xml)
+	static Scene loadFromXML(const ArgumentContainer& cnt, const LookupPaths& paths, const tinyxml2::XMLDocument& xml)
 	{
 		const auto rootScene = xml.RootElement();
 		if (strcmp(rootScene->Name(), "scene") != 0)
@@ -751,36 +814,44 @@ public:
 			throw std::runtime_error("Invalid version element");
 		}
 
-		parseObject(&scene, cnt, idcontainer, rootScene, PF_C_SCENE);
+		parseObject(&scene, cnt, paths, idcontainer, rootScene, PF_C_SCENE);
 
 		return scene;
 	}
 };
 
-Scene Scene::loadFromFile(const char* path, const ArgumentContainer& cnt)
+Scene SceneLoader::loadFromFile(const char* path)
 {
 	tinyxml2::XMLDocument xml;
 	xml.LoadFile(path);
-	return SceneLoader::loadFromXML(cnt, xml);
+
+	const auto dir = extractDirectoryOfPath(path);
+	if (dir.empty()) {
+		return InternalSceneLoader::loadFromXML(mArguments, mLookupPaths, xml);
+	} else {
+		LookupPaths copy = mLookupPaths;
+		copy.insert(copy.begin(), dir);
+		return InternalSceneLoader::loadFromXML(mArguments, copy, xml);
+	}
 }
 
-Scene Scene::loadFromString(const char* str, const ArgumentContainer& cnt)
+Scene SceneLoader::loadFromString(const char* str)
 {
 	tinyxml2::XMLDocument xml;
 	xml.Parse(str);
-	return SceneLoader::loadFromXML(cnt, xml);
+	return InternalSceneLoader::loadFromXML(mArguments, mLookupPaths, xml);
 }
 
-/*Scene Scene::loadFromStream(std::istream& stream, const ArgumentContainer& cnt)
+/*Scene SceneLoader::loadFromStream(std::istream& stream)
 {
 	// TODO
 	return Scene();
 }*/
 
-Scene Scene::loadFromMemory(const uint8_t* data, size_t size, const ArgumentContainer& cnt)
+Scene SceneLoader::loadFromMemory(const uint8_t* data, size_t size)
 {
 	tinyxml2::XMLDocument xml;
 	xml.Parse(reinterpret_cast<const char*>(data), size);
-	return SceneLoader::loadFromXML(cnt, xml);
+	return InternalSceneLoader::loadFromXML(mArguments, mLookupPaths, xml);
 }
 } // namespace TPM_NAMESPACE

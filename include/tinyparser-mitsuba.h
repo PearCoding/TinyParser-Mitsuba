@@ -87,6 +87,7 @@ enum PropertyType {
 /// The Vector structure is only for storage. Use a fully featured math library for calculations
 struct TPM_LIB Vector {
 	Number x, y, z;
+	Vector() = default;
 	inline Vector(Number x, Number y, Number z)
 		: x(x)
 		, y(y)

@@ -86,7 +86,7 @@ Transform Transform::multiplyFromRight(const Transform& other) const
 	return result;
 }
 
-// ------------- Parser
+// ------------- Basic Parser
 template <typename T, typename Func>
 inline static int _parseScalars(const std::string& str, T* numbers, int amount, Func func)
 {
@@ -152,7 +152,7 @@ static void _parseVersion(const char* v, int& major, int& minor, int& patch)
 	patch = std::stoi(version.substr(s2 + 1));
 }
 
-static std::string _unpackValues(const char* str, const ArgumentContainer& cnt)
+static std::string unpackValues(const char* str, const ArgumentContainer& cnt)
 {
 	std::string unpackedStr;
 	for (int i = 0; str[i];) {
@@ -176,6 +176,43 @@ static std::string _unpackValues(const char* str, const ArgumentContainer& cnt)
 	return unpackedStr;
 }
 
+static inline bool unpackInteger(const char* str, const ArgumentContainer& cnt, Integer* value)
+{
+	if (!str)
+		return false;
+
+	const std::string valueStr = unpackValues(str, cnt);
+	return _parseInteger(valueStr, value, 1) == 1;
+}
+
+static inline bool unpackNumber(const char* str, const ArgumentContainer& cnt, Number* value)
+{
+	if (!str)
+		return false;
+
+	const std::string valueStr = unpackValues(str, cnt);
+	return _parseNumber(valueStr, value, 1) == 1;
+}
+
+static inline bool unpackVector(const char* str, const ArgumentContainer& cnt, Vector* value)
+{
+	if (!str)
+		return false;
+
+	const std::string valueStr = unpackValues(str, cnt);
+	Number tmp[3];
+	auto c = _parseNumber(valueStr, tmp, 3);
+	if (c >= 1) {
+		value->x = tmp[0];
+		value->y = c >= 2 ? tmp[1] : Number(0);
+		value->z = c >= 3 ? tmp[2] : Number(0);
+		return true;
+	} else {
+		return false;
+	}
+}
+
+//--------------- ID Container
 class IDContainer {
 public:
 	inline void registerID(const std::string& id, const std::shared_ptr<Object>& entity)
@@ -249,83 +286,47 @@ enum ParseFlags {
 	PF_C_VOLUME		 = PF_C_OBJECTGROUP | PF_VOLUME,
 };
 
-static Property parseInteger(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static inline Property parseInteger(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	auto attrib = element->FindAttribute("value");
-	if (!attrib)
-		return Property();
-
-	std::string valueStr = _unpackValues(attrib->Value(), cnt);
-
 	Integer value;
-	if (_parseInteger(valueStr, &value, 1) != 1)
-		return Property();
-
-	return Property::fromInteger(value);
+	return unpackInteger(element->Attribute("value"), cnt, &value) ? Property::fromInteger(value) : Property();
 }
 
-static Property parseFloat(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static inline Property parseFloat(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	auto attrib = element->FindAttribute("value");
-	if (!attrib)
-		return Property();
-
-	std::string valueStr = _unpackValues(attrib->Value(), cnt);
-
 	Number value;
-	if (_parseNumber(valueStr, &value, 1) != 1)
-		return Property();
-
-	return Property::fromNumber(value);
+	return unpackNumber(element->Attribute("value"), cnt, &value) ? Property::fromNumber(value) : Property();
 }
 
-static Property parseVector(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static inline Property parseVector(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	auto attrib = element->FindAttribute("value");
+	auto attrib = element->Attribute("value");
 	if (!attrib) { // Try legacy way
-		auto xA = element->FindAttribute("x");
-		auto yA = element->FindAttribute("y");
-		auto zA = element->FindAttribute("z");
-
-		if (!xA || !yA || !zA)
+		Number x, y, z;
+		if (!unpackNumber(element->Attribute("x"), cnt, &x))
 			return Property();
-
-		std::string xStr = _unpackValues(xA->Value(), cnt);
-		std::string yStr = _unpackValues(yA->Value(), cnt);
-		std::string zStr = _unpackValues(zA->Value(), cnt);
-
-		float x, y, z;
-		if (_parseNumber(xStr, &x, 1) != 1)
+		if (!unpackNumber(element->Attribute("y"), cnt, &y))
 			return Property();
-		if (_parseNumber(yStr, &y, 1) != 1)
-			return Property();
-		if (_parseNumber(zStr, &z, 1) != 1)
+		if (!unpackNumber(element->Attribute("z"), cnt, &z))
 			return Property();
 
 		return Property::fromVector(Vector(x, y, z));
 	} else {
-		std::string valueStr = _unpackValues(attrib->Value(), cnt);
-
-		Number value[3];
-
-		int i = _parseNumber(valueStr, &value[0], 3);
-		if (i <= 0)
+		Vector v;
+		if (!unpackVector(attrib, cnt, &v))
 			return Property();
 
-		for (int j = i; j < 3; ++j)
-			value[j] = 0.0f;
-
-		return Property::fromVector(Vector(value[0], value[1], value[2]));
+		return Property::fromVector(v);
 	}
 }
 
-static Property parseBool(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static inline Property parseBool(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	auto attrib = element->FindAttribute("value");
+	auto attrib = element->Attribute("value");
 	if (!attrib)
 		return Property();
 
-	const auto valueStr = _unpackValues(attrib->Value(), cnt);
+	const auto valueStr = unpackValues(attrib, cnt);
 	if (valueStr == "true")
 		return Property::fromBool(true);
 	else if (valueStr == "false")
@@ -336,17 +337,28 @@ static Property parseBool(const ArgumentContainer& cnt, const tinyxml2::XMLEleme
 
 static Property parseRGB(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	auto attrib = element->FindAttribute("value");
-	if (!attrib)
-		return Property();
-
-	auto intent = element->Attribute("intent");
-
 	// TODO
+	auto intent = element->Attribute("intent");
 	(void)intent;
-	(void)cnt;
 
-	return Property();
+	auto attrib = element->Attribute("value");
+	if (!attrib) { // Try legacy way
+		Number r, g, b;
+		if (!unpackNumber(element->Attribute("r"), cnt, &r))
+			return Property();
+		if (!unpackNumber(element->Attribute("g"), cnt, &g))
+			return Property();
+		if (!unpackNumber(element->Attribute("b"), cnt, &b))
+			return Property();
+
+		return Property::fromRGB(RGB(r, g, b));
+	} else {
+		Vector v;
+		if (!unpackVector(attrib, cnt, &v))
+			return Property();
+
+		return Property::fromRGB(RGB(v.x, v.y, v.z));
+	}
 }
 
 static Property parseSpectrum(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
@@ -363,7 +375,7 @@ static Property parseSpectrum(const ArgumentContainer& cnt, const tinyxml2::XMLE
 		if (!value)
 			return Property();
 
-		const auto valueStr = _unpackValues(value, cnt);
+		const auto valueStr = unpackValues(value, cnt);
 
 		// TODO Parse string
 		return Property();
@@ -372,67 +384,101 @@ static Property parseSpectrum(const ArgumentContainer& cnt, const tinyxml2::XMLE
 
 static Property parseBlackbody(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	auto tempA = element->Attribute("temperature");
-	if (!tempA)
+	Number temp, scale;
+	if (!unpackNumber(element->Attribute("temperature"), cnt, &temp))
 		return Property();
 
-	std::string tempStr = _unpackValues(tempA, cnt);
-
-	Number temp;
-	if (_parseNumber(tempStr, &temp, 1) != 1)
-		return Property();
-
-	Number scale = 1.0f;
-	auto scaleA	 = element->Attribute("scale");
-	if (scaleA) {
-		std::string scaleStr = _unpackValues(scaleA, cnt);
-
-		if (_parseNumber(scaleStr, &scale, 1) != 1)
-			return Property();
-	}
+	if (!unpackNumber(element->Attribute("scale"), cnt, &temp))
+		scale = Number(1);
 
 	return Property::fromBlackbody(Blackbody(temp, scale));
 }
 
 static Property parseString(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	auto attrib = element->FindAttribute("value");
+	auto attrib = element->Attribute("value");
 	if (!attrib)
 		return Property();
-	return Property::fromString(_unpackValues(attrib->Value(), cnt));
+	return Property::fromString(unpackValues(attrib, cnt));
 }
 
+// Declaration
 Transform parseInnerMatrix(const ArgumentContainer&, const tinyxml2::XMLElement*);
 
 Transform parseTransformTranslate(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	// TODO
-	Transform M = Transform::fromIdentity();
-	return M * parseInnerMatrix(cnt, element);
+	Vector delta;
+	auto value = element->Attribute("value");
+	if (value) {
+		if (!unpackVector(value, cnt, &delta))
+			delta = Vector(0, 0, 0);
+	} else {
+		if (!unpackNumber(element->Attribute("x"), cnt, &delta.x))
+			delta.x = 0;
+		if (!unpackNumber(element->Attribute("y"), cnt, &delta.y))
+			delta.y = 0;
+		if (!unpackNumber(element->Attribute("z"), cnt, &delta.z))
+			delta.z = 0;
+	}
+
+	return Transform::fromTranslation(delta) * parseInnerMatrix(cnt, element);
 }
 
 Transform parseTransformScale(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
+	Vector scale;
 	auto uniformScaleA = element->Attribute("value");
 	if (uniformScaleA) {
+		if (!unpackVector(uniformScaleA, cnt, &scale))
+			scale = Vector(1, 1, 1);
+	} else {
+		if (!unpackNumber(element->Attribute("x"), cnt, &scale.x))
+			scale.x = 1;
+		if (!unpackNumber(element->Attribute("y"), cnt, &scale.y))
+			scale.y = 1;
+		if (!unpackNumber(element->Attribute("z"), cnt, &scale.z))
+			scale.z = 1;
 	}
-	// TODO
-	Transform M = Transform::fromIdentity();
-	return M * parseInnerMatrix(cnt, element);
+
+	return Transform::fromScale(scale) * parseInnerMatrix(cnt, element);
 }
 
 Transform parseTransformRotate(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	// TODO
-	Transform M = Transform::fromIdentity();
-	return M * parseInnerMatrix(cnt, element);
+	Vector axis;
+	auto value = element->Attribute("axis");
+	if (value) {
+		if (!unpackVector(value, cnt, &axis))
+			axis = Vector(0, 0, 1);
+	} else {
+		if (!unpackNumber(element->Attribute("x"), cnt, &axis.x))
+			axis.x = 0;
+		if (!unpackNumber(element->Attribute("y"), cnt, &axis.y))
+			axis.y = 0;
+		if (!unpackNumber(element->Attribute("z"), cnt, &axis.z))
+			axis.z = 1;
+	}
+
+	Number angle;
+	if (!unpackNumber(element->Attribute("angle"), cnt, &angle))
+		return Transform::fromIdentity();
+
+	return Transform::fromRotation(axis, angle) * parseInnerMatrix(cnt, element);
 }
 
 Transform parseTransformLookAt(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
 {
-	// TODO
-	Transform M = Transform::fromIdentity();
-	return M * parseInnerMatrix(cnt, element);
+	Vector origin, target, up;
+	if (!unpackVector(element->Attribute("origin"), cnt, &origin))
+		return Transform::fromIdentity();
+
+	if (!unpackVector(element->Attribute("target"), cnt, &target))
+		return Transform::fromIdentity();
+
+	if (!unpackVector(element->Attribute("up"), cnt, &up))
+		up = Vector(0, 0, 1);
+
+	return Transform::fromLookAt(origin, target, up) * parseInnerMatrix(cnt, element);
 }
 
 using TransformParseCallback = Transform (*)(const ArgumentContainer&, const tinyxml2::XMLElement*);

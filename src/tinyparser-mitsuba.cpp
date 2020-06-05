@@ -753,6 +753,8 @@ static void parseObject(Object*, const ParseContext&, IDContainer&, const tinyxm
 static void handleInclude(Object* obj, const ParseContext& ctx, IDContainer& ids,
 						  const tinyxml2::XMLElement* element)
 {
+	// TODO: Any default statement inside a include is not visible in the parent scope. But should that not be the case?
+	
 	auto filename = element->Attribute("filename");
 	if (!filename)
 		throw std::runtime_error("Invalid include element");

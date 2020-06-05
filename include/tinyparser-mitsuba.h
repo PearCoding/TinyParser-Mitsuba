@@ -475,20 +475,23 @@ public:
 	}
 
 	inline TPM_NODISCARD Property& operator[](const std::string& key) { return mProperties[key]; }
-
 	inline TPM_NODISCARD Property operator[](const std::string& key) const { return property(key); }
 
-	inline void addObject(const std::shared_ptr<Object>& obj)
-	{
-		mChildren.push_back(obj);
-	}
+	inline void addAnonymousChild(const std::shared_ptr<Object>& obj) { mChildren.push_back(obj); }
+	inline TPM_NODISCARD const std::vector<std::shared_ptr<Object>>& anonymousChildren() const { return mChildren; }
 
-	inline TPM_NODISCARD const std::vector<std::shared_ptr<Object>>& objects() const { return mChildren; }
+	inline void addNamedChild(const std::string& key, const std::shared_ptr<Object>& obj) { mNamedChildren[key] = obj; }
+	inline TPM_NODISCARD const std::unordered_map<std::string, std::shared_ptr<Object>>& namedChildren() const { return mNamedChildren; }
+	inline TPM_NODISCARD std::shared_ptr<Object> namedChild(const std::string& key) const
+	{
+		return mNamedChildren.count(key) ? mNamedChildren.at(key) : nullptr;
+	}
 
 private:
 	ObjectType mType;
 	std::unordered_map<std::string, Property> mProperties;
 	std::vector<std::shared_ptr<Object>> mChildren;
+	std::unordered_map<std::string, std::shared_ptr<Object>> mNamedChildren;
 };
 
 // --------------- Scene

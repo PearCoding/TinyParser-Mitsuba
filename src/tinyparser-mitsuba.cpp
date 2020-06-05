@@ -606,7 +606,7 @@ static const struct {
 	{ "float", parseFloat },
 	{ "vector", parseVector },
 	{ "point", parseVector },
-	{ "bool", parseBool },
+	{ "boolean", parseBool },
 	{ "string", parseString },
 	{ "rgb", parseRGB },
 	{ "spectrum", parseSpectrum },
@@ -665,28 +665,27 @@ static void handleDefault(ArgumentContainer& cnt, const tinyxml2::XMLElement* el
 
 static void handleReference(Object* obj, const ArgumentContainer& cnt, const IDContainer& ids, const tinyxml2::XMLElement* element, int flags)
 {
-	auto id = element->Attribute("id");
-	/*auto name = element->Attribute("name");*/ // FIXME: Ignore it for now
+	auto id	  = element->Attribute("id");
+	auto name = element->Attribute("name");
 
 	if (!id)
 		throw std::runtime_error("Invalid ref element");
 
-#ifndef TPM_NO_EXTENSIONS
 	const auto ref_id = unpackValues(id, cnt);
-#else
-	(void)cnt;
-	const auto ref_id = std::string(id);
-#endif
 
 	if (!ids.hasID(ref_id))
 		throw std::runtime_error("Id " + ref_id + " does not exists");
 
 	auto ref = ids.get(ref_id);
 
-	if (flags & OT_PF(obj->type()))
-		obj->addObject(ref);
-	else
+	if (flags & OT_PF(obj->type())) {
+		if (name)
+			obj->addNamedChild(name, ref);
+		else
+			obj->addAnonymousChild(ref);
+	} else {
 		throw std::runtime_error("Id " + ref_id + " not of allowed type");
+	}
 }
 
 static void parseObject(Object*, const ArgumentContainer&, const LookupPaths&, IDContainer&, const tinyxml2::XMLElement*, int);
@@ -781,7 +780,7 @@ static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, const Lo
 			}
 
 			if (child) {
-				const char* id = childElement->Attribute("id");
+				auto id = childElement->Attribute("id");
 				if (id) {
 					if (!ids.hasID(id)) {
 						ids.registerID(id, child);
@@ -790,7 +789,11 @@ static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, const Lo
 					}
 				}
 
-				obj->addObject(child);
+				auto name = childElement->Attribute("name");
+				if (name)
+					obj->addNamedChild(name, child);
+				else
+					obj->addAnonymousChild(child);
 			} else {
 				std::stringstream stream;
 				stream << "Found invalid tag '" << childElement->Name() << "'";

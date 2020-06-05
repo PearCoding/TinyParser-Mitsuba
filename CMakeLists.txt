@@ -21,9 +21,10 @@ endif()
 option(BUILD_SHARED_LIBS 	"Build as shared library" ON)
 option(BUILD_TESTING 		"Build the testing tree" ${TPM_BUILD_EXTRA_DEFAULT})
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	option(GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." ${TPM_BUILD_EXTRA_DEFAULT})
+	option(GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." OFF)
 endif()
 option(BUILD_DOCUMENTATION 	"Build documentation with doxygen." ${TPM_BUILD_EXTRA_DEFAULT})
+option(BUILD_DUMP_UTILITY 	"Build utility tool to dump parsable files." ${TPM_BUILD_EXTRA_DEFAULT})
 
 #SETS
 if(BUILD_SHARED_LIBS AND WIN32 AND NOT CYGWIN)
@@ -57,6 +58,11 @@ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
 	POSITION_INDEPENDENT_CODE ON)
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC $<$<CONFIG:Debug>:TPM_DEBUG> PRIVATE "TPM_EXPORT")
+
+if(BUILD_DUMP_UTILITY)
+	add_executable(tpm_dump src/dump.cpp)
+	target_link_libraries(tpm_dump PRIVATE ${CMAKE_PROJECT_NAME})
+endif()
 
 # Coverage start
 if(GENERATE_COVERAGE AND (CMAKE_BUILD_TYPE MATCHES Debug))

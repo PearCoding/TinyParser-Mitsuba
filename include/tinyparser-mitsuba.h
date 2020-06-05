@@ -465,22 +465,28 @@ private:
 // --------------- Object
 class TPM_LIB Object {
 public:
-	inline explicit Object(ObjectType type)
+	inline explicit Object(ObjectType type, const std::string& pluginType)
 		: mType(type)
+		, mPluginType(pluginType)
 	{
 	}
 
+	Object(const Object& other) = default;
+	Object(Object&& other)		= default;
+
+	Object& operator=(const Object& other) = default;
+	Object& operator=(Object&& other) = default;
+
 	inline TPM_NODISCARD ObjectType type() const { return mType; }
+	inline TPM_NODISCARD const std::string& pluginType() const { return mPluginType; }
 
 	inline TPM_NODISCARD Property property(const std::string& key) const
 	{
 		return mProperties.count(key) ? mProperties.at(key) : Property();
 	}
 
-	inline void setProperty(const std::string& key, const Property& prop)
-	{
-		mProperties[key] = prop;
-	}
+	inline void setProperty(const std::string& key, const Property& prop) { mProperties[key] = prop; }
+	inline TPM_NODISCARD const std::unordered_map<std::string, Property>& properties() const { return mProperties; }
 
 	inline TPM_NODISCARD Property& operator[](const std::string& key) { return mProperties[key]; }
 	inline TPM_NODISCARD Property operator[](const std::string& key) const { return property(key); }
@@ -497,6 +503,7 @@ public:
 
 private:
 	ObjectType mType;
+	std::string mPluginType;
 	std::unordered_map<std::string, Property> mProperties;
 	std::vector<std::shared_ptr<Object>> mChildren;
 	std::unordered_map<std::string, std::shared_ptr<Object>> mNamedChildren;
@@ -519,7 +526,7 @@ public:
 
 private:
 	inline Scene()
-		: Object(OT_SCENE)
+		: Object(OT_SCENE, "")
 	{
 	}
 

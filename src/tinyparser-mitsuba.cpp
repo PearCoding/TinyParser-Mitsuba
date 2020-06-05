@@ -316,10 +316,12 @@ enum ParseFlags {
 	PF_C_INTEGRATOR	 = PF_C_OBJECTGROUP | PF_INTEGRATOR | PF_SAMPLER,
 	PF_C_MEDIUM		 = PF_C_OBJECTGROUP | PF_SHAPE | PF_VOLUME | PF_PHASE,
 	PF_C_PHASE		 = PF_C_OBJECTGROUP | PF_PHASE,
+	PF_C_SAMPLER	 = PF_C_OBJECTGROUP,
 	PF_C_SCENE		 = PF_C_OBJECTGROUP | PF_ALIAS | PF_SENSOR | PF_TEXTURE | PF_BSDF | PF_SUBSURFACE | PF_INTEGRATOR | PF_EMITTER | PF_SHAPE | PF_MEDIUM | PF_PHASE | PF_INCLUDE | PF_NULL,
-	PF_C_SENSOR		 = PF_C_OBJECTGROUP | PF_SENSOR | PF_FILM | PF_MEDIUM | PF_REFERENCE,
+	PF_C_SENSOR		 = PF_C_OBJECTGROUP | PF_SENSOR | PF_FILM | PF_MEDIUM | PF_SAMPLER | PF_REFERENCE,
 	PF_C_SHAPE		 = PF_C_OBJECTGROUP | PF_BSDF | PF_SUBSURFACE | PF_SENSOR | PF_EMITTER | PF_SHAPE | PF_MEDIUM | PF_TEXTURE | PF_RFILTER | PF_REFERENCE,
 	PF_C_SUBSURFACE	 = PF_C_OBJECTGROUP | PF_PHASE | PF_BSDF,
+	PF_C_RFILTER	 = PF_C_OBJECTGROUP,
 	PF_C_TEXTURE	 = PF_C_OBJECTGROUP | PF_TEXTURE | PF_RFILTER | PF_REFERENCE,
 	PF_C_VOLUME		 = PF_C_OBJECTGROUP | PF_VOLUME,
 };
@@ -786,9 +788,11 @@ static const struct {
 	{ "integrator", OT_INTEGRATOR, PF_C_INTEGRATOR },
 	{ "medium", OT_MEDIUM, PF_C_MEDIUM },
 	{ "phase", OT_PHASE, PF_C_PHASE },
+	{ "sampler", OT_SAMPLER, PF_C_SAMPLER },
 	{ "sensor", OT_SENSOR, PF_C_SENSOR },
 	{ "shape", OT_SHAPE, PF_C_SHAPE },
 	{ "subsurface", OT_SUBSURFACE, PF_C_SUBSURFACE },
+	{ "rfilter", OT_RFILTER, PF_C_RFILTER },
 	{ "texture", OT_TEXTURE, PF_C_TEXTURE },
 	{ "volume", OT_VOLUME, PF_C_VOLUME },
 	{ nullptr, ObjectType(0), 0 }
@@ -823,7 +827,9 @@ static void parseObject(Object* obj, const ParseContext& ctx, IDContainer& ids, 
 			for (int i = 0; _parseElements[i].Name; ++i) {
 				if ((OT_PF(_parseElements[i].Type) & flags)
 					&& strcmp(childElement->Name(), _parseElements[i].Name) == 0) {
-					child = std::make_shared<Object>(_parseElements[i].Type);
+
+					auto pluginType = childElement->Attribute("type");
+					child			= std::make_shared<Object>(_parseElements[i].Type, pluginType ? pluginType : "");
 					parseObject(child.get(), nextCtx, ids, childElement, _parseElements[i].Flags);
 					break;
 				}

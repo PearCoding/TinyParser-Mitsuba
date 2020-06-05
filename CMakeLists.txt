@@ -10,6 +10,7 @@ project(tinyparser_mitsuba
 
 set(TPM_LIB_VERSION "${PROJECT_VERSION}")
 set(TPM_LIB_SOVERSION "${PROJECT_VERSION_MAJOR}")
+set(TPM_TARGET "${PROJECT_NAME}")
 
 get_directory_property(TPM_IS_SUBPROJECT PARENT_DIRECTORY)
 if(TPM_IS_SUBPROJECT)
@@ -18,7 +19,7 @@ else()
 set(TPM_BUILD_EXTRA_DEFAULT ON)
 endif()
 
-option(BUILD_SHARED_LIBS 	"Build as shared library" ON)
+option(BUILD_SHARED_LIBS 	"Build as shared library" OFF)
 option(BUILD_TESTING 		"Build the testing tree" ${TPM_BUILD_EXTRA_DEFAULT})
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	option(GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." OFF)
@@ -42,26 +43,26 @@ set(TINYPARSER_MITSUBA_FILES include/tinyparser-mitsuba.h src/tinyparser-mitsuba
 set(TINYXML2_FILES external/tinyxml2/tinyxml2.cpp external/tinyxml2/tinyxml2.h)
 
 set(TPM_NAMESPACE tinyparser_mitsuba)
-add_library(${CMAKE_PROJECT_NAME} ${TINYPARSER_MITSUBA_FILES} ${TINYXML2_FILES}) 
-target_include_directories(${CMAKE_PROJECT_NAME} 
+add_library(${TPM_TARGET} ${TINYPARSER_MITSUBA_FILES} ${TINYXML2_FILES}) 
+target_include_directories(${TPM_TARGET} 
 PUBLIC 
 	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 PRIVATE 
 	${PROJECT_SOURCE_DIR}/external/tinyxml2/
 )
-target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_11)
-set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
+target_compile_features(${TPM_TARGET} PUBLIC cxx_std_11)
+set_target_properties(${TPM_TARGET} PROPERTIES
 	VERSION "${TPM_LIB_VERSION}"
 	SOVERSION "${TPM_LIB_SOVERSION}"
 	CXX_VISIBILITY_PRESET hidden
 	POSITION_INDEPENDENT_CODE ON)
 
-target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC $<$<CONFIG:Debug>:TPM_DEBUG> PRIVATE "TPM_EXPORT")
+target_compile_definitions(${TPM_TARGET} PUBLIC $<$<CONFIG:Debug>:TPM_DEBUG> PRIVATE "TPM_EXPORT")
 
 if(BUILD_DUMP_UTILITY)
 	add_executable(tpm_dump src/dump.cpp)
-	target_link_libraries(tpm_dump PRIVATE ${CMAKE_PROJECT_NAME})
+	target_link_libraries(tpm_dump PRIVATE ${TPM_TARGET})
 endif()
 
 # Coverage start

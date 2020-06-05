@@ -1,37 +1,37 @@
 include(GNUInstallDirs)
 
-install(TARGETS ${CMAKE_PROJECT_NAME}
-        EXPORT ${CMAKE_PROJECT_NAME}Targets
+install(TARGETS ${TPM_TARGET}
+        EXPORT ${TPM_TARGET}Targets
         RUNTIME 
                 DESTINATION ${CMAKE_INSTALL_BINDIR}
-                COMPONENT ${CMAKE_PROJECT_NAME}_runtime
+                COMPONENT ${TPM_TARGET}_runtime
         LIBRARY 
                 DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                COMPONENT ${CMAKE_PROJECT_NAME}_libraries
+                COMPONENT ${TPM_TARGET}_libraries
         ARCHIVE 
                 DESTINATION ${CMAKE_INSTALL_LIBDIR}
-				COMPONENT ${CMAKE_PROJECT_NAME}_libraries)
+				COMPONENT ${TPM_TARGET}_libraries)
 
-install(FILES include/tinyparser-mitsuba.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT ${CMAKE_PROJECT_NAME}_headers)
+install(FILES include/tinyparser-mitsuba.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT ${TPM_TARGET}_headers)
 
 include(CMakePackageConfigHelpers)
-set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
+set(TARGETS_EXPORT_NAME "${TPM_TARGET}Targets")
 configure_package_config_file(
   "cmake/config.cmake.in"
-  "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake"
-  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}"
+  "${CMAKE_BINARY_DIR}/${TPM_TARGET}Config.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${TPM_TARGET}"
 )
 write_basic_package_version_file(
-  "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake"
+  "${CMAKE_BINARY_DIR}/${TPM_TARGET}ConfigVersion.cmake"
   VERSION ${TPM_LIB_VERSION}
   COMPATIBILITY SameMajorVersion
 )
 install(FILES
-        ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake
-        ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}
-        COMPONENT ${CMAKE_PROJECT_NAME}_config)
+        ${CMAKE_BINARY_DIR}/${TPM_TARGET}Config.cmake
+        ${CMAKE_BINARY_DIR}/${TPM_TARGET}ConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${TPM_TARGET}
+        COMPONENT ${TPM_TARGET}_config)
 
-install(EXPORT ${CMAKE_PROJECT_NAME}Targets NAMESPACE ${TPM_NAMESPACE}::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}
-		COMPONENT ${CMAKE_PROJECT_NAME}_config)
+install(EXPORT ${TPM_TARGET}Targets NAMESPACE ${TPM_NAMESPACE}::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${TPM_TARGET}
+		COMPONENT ${TPM_TARGET}_config)

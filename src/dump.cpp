@@ -163,7 +163,8 @@ static void dumpObject(Object* obj, const std::string& name, int depth)
 int main(int argc, char** argv)
 {
 	if (argc < 2) {
-		std::cout << "Arguments missing. Call with " << (argc >= 1 ? argv[0] : "tpm_dump") << " FILENAME" << std::endl;
+		std::cout << "Arguments missing." << std::endl;
+		std::cout << "Call with " << (argc >= 1 ? argv[0] : "tpm_dump") << " FILENAME" << std::endl;
 		return EXIT_FAILURE;
 	}
 

@@ -537,6 +537,8 @@ private:
 
 // --------------- SceneLoader
 class TPM_LIB SceneLoader {
+	friend class InternalSceneLoader;
+
 public:
 	inline SceneLoader() = default;
 
@@ -569,8 +571,11 @@ public:
 		mArguments[key] = value;
 	}
 
+	inline void disableLowerCaseConversion(bool b = true) { mDisableLowerCaseConversion = b; }
+
 private:
 	std::vector<std::string> mLookupPaths;
 	std::unordered_map<std::string, std::string> mArguments;
+	bool mDisableLowerCaseConversion = false;
 };
 } // namespace TPM_NAMESPACE

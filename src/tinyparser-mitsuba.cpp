@@ -1,5 +1,6 @@
 #include "tinyparser-mitsuba.h"
 
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <sstream>
@@ -48,6 +49,32 @@ static inline std::string resolvePath(const std::string& path, const LookupPaths
 		return path;
 	else
 		return "";
+}
+
+// ------------- String stuff
+static inline std::string handleCamelCase(const std::string& camelCase)
+{
+	std::string str(1, tolower(camelCase[0]));
+
+	// First place underscores between contiguous lower and upper case letters.
+	// For example, `_LowerCamelCase` becomes `_Lower_Camel_Case`.
+	for (auto it = camelCase.begin() + 1; it != camelCase.end(); ++it) {
+		if (isupper(*it) && *(it - 1) != '_' && islower(*(it - 1))) {
+			str += "_";
+		}
+		str += *it;
+	}
+
+	// Then convert it to lower case.
+	std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+
+	return str;
+}
+
+// Simple function to ease other parts
+static inline std::string convertCC(const std::string& camelCase, bool select)
+{
+	return select ? handleCamelCase(camelCase) : camelCase;
 }
 
 // ------------- Vector Math
@@ -329,6 +356,7 @@ enum ParseFlags {
 struct ParseContext {
 	const TPM_NAMESPACE::ArgumentContainer& Arguments;
 	const TPM_NAMESPACE::LookupPaths& LookupPaths;
+	const bool ConvertCamelCase;
 };
 
 static inline Property parseInteger(const ParseContext& ctx, const tinyxml2::XMLElement* element)
@@ -683,11 +711,12 @@ bool parseParameter(Object* obj, const ParseContext& ctx, const tinyxml2::XMLEle
 	if (!name)
 		return false;
 
+	const std::string lcname = convertCC(name, ctx.ConvertCamelCase);
 	for (int i = 0; _propertyParseElement[i].Name; ++i) {
 		if (strcmp(element->Name(), _propertyParseElement[i].Name) == 0) {
 			auto prop = _propertyParseElement[i].Callback(ctx, element);
 			if (prop.isValid())
-				obj->setProperty(name, prop);
+				obj->setProperty(lcname, prop);
 			return true;
 		}
 	}
@@ -724,7 +753,7 @@ static void handleDefault(ArgumentContainer& cnt, const tinyxml2::XMLElement* el
 		cnt[name] = value;
 }
 
-static void handleReference(Object* obj, const ArgumentContainer& cnt, const IDContainer& ids, const tinyxml2::XMLElement* element, int flags)
+static void handleReference(Object* obj, const ParseContext& ctx, const IDContainer& ids, const tinyxml2::XMLElement* element, int flags)
 {
 	auto id	  = element->Attribute("id");
 	auto name = element->Attribute("name");
@@ -732,7 +761,7 @@ static void handleReference(Object* obj, const ArgumentContainer& cnt, const IDC
 	if (!id)
 		throw std::runtime_error("Invalid ref element");
 
-	const auto ref_id = unpackValues(id, cnt);
+	const auto ref_id = unpackValues(id, ctx.Arguments);
 
 	if (!ids.hasID(ref_id))
 		throw std::runtime_error("Id " + ref_id + " does not exists");
@@ -741,7 +770,7 @@ static void handleReference(Object* obj, const ArgumentContainer& cnt, const IDC
 
 	if (flags & OT_PF(obj->type())) {
 		if (name)
-			obj->addNamedChild(name, ref);
+			obj->addNamedChild(convertCC(name, ctx.ConvertCamelCase), ref);
 		else
 			obj->addAnonymousChild(ref);
 	} else {
@@ -754,7 +783,7 @@ static void handleInclude(Object* obj, const ParseContext& ctx, IDContainer& ids
 						  const tinyxml2::XMLElement* element)
 {
 	// TODO: Any default statement inside a include is not visible in the parent scope. But should that not be the case?
-	
+
 	auto filename = element->Attribute("filename");
 	if (!filename)
 		throw std::runtime_error("Invalid include element");
@@ -804,7 +833,7 @@ static void parseObject(Object* obj, const ParseContext& ctx, IDContainer& ids, 
 {
 	// Copy container to make sure recursive elements do not overwrite it
 	ArgumentContainer cnt = ctx.Arguments;
-	ParseContext nextCtx{ cnt, ctx.LookupPaths };
+	ParseContext nextCtx{ cnt, ctx.LookupPaths, ctx.ConvertCamelCase };
 
 	for (auto childElement = element->FirstChildElement();
 		 childElement;
@@ -814,7 +843,7 @@ static void parseObject(Object* obj, const ParseContext& ctx, IDContainer& ids, 
 			continue;
 
 		if ((flags & PF_REFERENCE) && strcmp(childElement->Name(), "ref") == 0) {
-			handleReference(obj, cnt, ids, childElement, flags);
+			handleReference(obj, ctx, ids, childElement, flags);
 		} else if ((flags & PF_DEFAULT) && strcmp(childElement->Name(), "default") == 0) {
 			handleDefault(cnt, childElement);
 		} else if ((flags & PF_INCLUDE) && strcmp(childElement->Name(), "include") == 0) {
@@ -849,7 +878,7 @@ static void parseObject(Object* obj, const ParseContext& ctx, IDContainer& ids, 
 
 				auto name = childElement->Attribute("name");
 				if (name)
-					obj->addNamedChild(name, child);
+					obj->addNamedChild(convertCC(name, ctx.ConvertCamelCase), child);
 				else
 					obj->addAnonymousChild(child);
 			} else {
@@ -863,7 +892,7 @@ static void parseObject(Object* obj, const ParseContext& ctx, IDContainer& ids, 
 
 class InternalSceneLoader {
 public:
-	static Scene loadFromXML(const ArgumentContainer& cnt, const LookupPaths& paths, const tinyxml2::XMLDocument& xml)
+	static Scene loadFromXML(const SceneLoader& loader, const tinyxml2::XMLDocument& xml)
 	{
 		const auto rootScene = xml.RootElement();
 		if (strcmp(rootScene->Name(), "scene") != 0)
@@ -878,7 +907,8 @@ public:
 			throw std::runtime_error("Invalid version element");
 		}
 
-		parseObject(&scene, ParseContext{ cnt, paths }, idcontainer, rootScene, PF_C_SCENE);
+		const bool convertFromCamelCase = !loader.mDisableLowerCaseConversion && (scene.mVersionMajor == 0);
+		parseObject(&scene, ParseContext{ loader.mArguments, loader.mLookupPaths, convertFromCamelCase }, idcontainer, rootScene, PF_C_SCENE);
 
 		return scene;
 	}
@@ -891,11 +921,12 @@ Scene SceneLoader::loadFromFile(const char* path)
 
 	const auto dir = extractDirectoryOfPath(path);
 	if (dir.empty()) {
-		return InternalSceneLoader::loadFromXML(mArguments, mLookupPaths, xml);
+		return InternalSceneLoader::loadFromXML(*this, xml);
 	} else {
-		LookupPaths copy = mLookupPaths;
-		copy.insert(copy.begin(), dir);
-		return InternalSceneLoader::loadFromXML(mArguments, copy, xml);
+		mLookupPaths.insert(mLookupPaths.begin(), dir);
+		const auto res = InternalSceneLoader::loadFromXML(*this, xml);
+		mLookupPaths.erase(mLookupPaths.begin());
+		return res;
 	}
 }
 
@@ -903,7 +934,7 @@ Scene SceneLoader::loadFromString(const char* str)
 {
 	tinyxml2::XMLDocument xml;
 	xml.Parse(str);
-	return InternalSceneLoader::loadFromXML(mArguments, mLookupPaths, xml);
+	return InternalSceneLoader::loadFromXML(*this, xml);
 }
 
 /*Scene SceneLoader::loadFromStream(std::istream& stream)
@@ -916,6 +947,6 @@ Scene SceneLoader::loadFromMemory(const uint8_t* data, size_t size)
 {
 	tinyxml2::XMLDocument xml;
 	xml.Parse(reinterpret_cast<const char*>(data), size);
-	return InternalSceneLoader::loadFromXML(mArguments, mLookupPaths, xml);
+	return InternalSceneLoader::loadFromXML(*this, xml);
 }
 } // namespace TPM_NAMESPACE

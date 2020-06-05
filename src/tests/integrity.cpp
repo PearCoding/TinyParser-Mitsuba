@@ -57,8 +57,31 @@ TEST_CASE("Vector", "[integrity]")
 	auto prop  = scene["test"];
 	REQUIRE(prop.getVector() == v);
 
-	// Wit default + argument
 	scene = loader.loadFromString("<scene version='0.6'><vector name='test' x='5.6e1' y='42.0' z='7' /></scene>");
 	prop  = scene["test"];
 	REQUIRE(prop.getVector() == v);
+}
+
+TEST_CASE("Spectrum", "[integrity]")
+{
+	SceneLoader loader;
+	auto scene = loader.loadFromString("<scene version='0.6'><spectrum name='test' value='42' /></scene>");
+	auto prop  = scene["test"];
+	REQUIRE(prop.getSpectrum().isUniform());
+	REQUIRE(prop.getSpectrum().uniformValue() == 42);
+
+	scene = loader.loadFromString("<scene version='0.6'><spectrum name='test' value='560:0.5, 630:1 720:0.5' /></scene>");
+	prop  = scene["test"];
+	REQUIRE(!prop.getSpectrum().isUniform());
+
+	auto wvls	 = prop.getSpectrum().wavelengths();
+	auto weights = prop.getSpectrum().weights();
+	REQUIRE(wvls.size() == 3);
+	REQUIRE(wvls[0] == 560);
+	REQUIRE(wvls[1] == 630);
+	REQUIRE(wvls[2] == 720);
+	REQUIRE(weights.size() == 3);
+	REQUIRE(weights[0] == 0.5);
+	REQUIRE(weights[1] == 1);
+	REQUIRE(weights[2] == 0.5);
 }

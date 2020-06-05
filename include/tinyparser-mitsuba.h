@@ -191,11 +191,19 @@ inline TPM_NODISCARD bool operator!=(const RGB& a, const RGB& b)
 class TPM_LIB Spectrum {
 public:
 	Spectrum() = default;
+	inline explicit Spectrum(Number uniform)
+	{
+		mWeights.push_back(uniform);
+	}
+
 	inline Spectrum(const std::vector<int>& wavelengths, const std::vector<Number>& weights)
 		: mWavelengths(wavelengths)
 		, mWeights(weights)
 	{
 	}
+
+	inline TPM_NODISCARD bool isUniform() const { return mWavelengths.size() == 0 && mWeights.size() == 1; }
+	inline TPM_NODISCARD Number uniformValue() const { return mWeights.front(); }
 
 	inline TPM_NODISCARD const std::vector<int>& wavelengths() const { return mWavelengths; }
 	inline TPM_NODISCARD const std::vector<Number>& weights() const { return mWeights; }

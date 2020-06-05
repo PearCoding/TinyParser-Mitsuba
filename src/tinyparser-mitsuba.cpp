@@ -11,6 +11,7 @@ namespace TPM_NAMESPACE {
 using LookupPaths		= std::vector<std::string>;
 using ArgumentContainer = std::unordered_map<std::string, std::string>;
 
+// ------------- File IO
 static inline bool doesFileExist(const std::string& fileName)
 {
 	return std::ifstream(fileName).good();
@@ -35,6 +36,21 @@ static inline std::string extractDirectoryOfPath(const std::string& str)
 	return (found == std::string::npos) ? "" : str.substr(0, found);
 }
 
+static inline std::string resolvePath(const std::string& path, const LookupPaths& lookups)
+{
+	for (const auto& dir : lookups) {
+		const std::string p = concactPaths(dir, path);
+		if (doesFileExist(p))
+			return p;
+	}
+
+	if (doesFileExist(path))
+		return path;
+	else
+		return "";
+}
+
+// ------------- Vector Math
 static inline Vector normalize(const Vector& v)
 {
 	const Number n = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
@@ -308,47 +324,52 @@ enum ParseFlags {
 	PF_C_VOLUME		 = PF_C_OBJECTGROUP | PF_VOLUME,
 };
 
-static inline Property parseInteger(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+struct ParseContext {
+	const TPM_NAMESPACE::ArgumentContainer& Arguments;
+	const TPM_NAMESPACE::LookupPaths& LookupPaths;
+};
+
+static inline Property parseInteger(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	Integer value;
-	return unpackInteger(element->Attribute("value"), cnt, &value) ? Property::fromInteger(value) : Property();
+	return unpackInteger(element->Attribute("value"), ctx.Arguments, &value) ? Property::fromInteger(value) : Property();
 }
 
-static inline Property parseFloat(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static inline Property parseFloat(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	Number value;
-	return unpackNumber(element->Attribute("value"), cnt, &value) ? Property::fromNumber(value) : Property();
+	return unpackNumber(element->Attribute("value"), ctx.Arguments, &value) ? Property::fromNumber(value) : Property();
 }
 
-static inline Property parseVector(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static inline Property parseVector(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	auto attrib = element->Attribute("value");
 	if (!attrib) { // Try legacy way
 		Number x, y, z;
-		if (!unpackNumber(element->Attribute("x"), cnt, &x))
+		if (!unpackNumber(element->Attribute("x"), ctx.Arguments, &x))
 			return Property();
-		if (!unpackNumber(element->Attribute("y"), cnt, &y))
+		if (!unpackNumber(element->Attribute("y"), ctx.Arguments, &y))
 			return Property();
-		if (!unpackNumber(element->Attribute("z"), cnt, &z))
+		if (!unpackNumber(element->Attribute("z"), ctx.Arguments, &z))
 			return Property();
 
 		return Property::fromVector(Vector(x, y, z));
 	} else {
 		Vector v;
-		if (!unpackVector(attrib, cnt, &v))
+		if (!unpackVector(attrib, ctx.Arguments, &v))
 			return Property();
 
 		return Property::fromVector(v);
 	}
 }
 
-static inline Property parseBool(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static inline Property parseBool(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	auto attrib = element->Attribute("value");
 	if (!attrib)
 		return Property();
 
-	const auto valueStr = unpackValues(attrib, cnt);
+	const auto valueStr = unpackValues(attrib, ctx.Arguments);
 	if (valueStr == "true")
 		return Property::fromBool(true);
 	else if (valueStr == "false")
@@ -357,7 +378,7 @@ static inline Property parseBool(const ArgumentContainer& cnt, const tinyxml2::X
 		return Property();
 }
 
-static Property parseRGB(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static Property parseRGB(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	// TODO
 	auto intent = element->Attribute("intent");
@@ -366,151 +387,189 @@ static Property parseRGB(const ArgumentContainer& cnt, const tinyxml2::XMLElemen
 	auto attrib = element->Attribute("value");
 	if (!attrib) { // Try legacy way
 		Number r, g, b;
-		if (!unpackNumber(element->Attribute("r"), cnt, &r))
+		if (!unpackNumber(element->Attribute("r"), ctx.Arguments, &r))
 			return Property();
-		if (!unpackNumber(element->Attribute("g"), cnt, &g))
+		if (!unpackNumber(element->Attribute("g"), ctx.Arguments, &g))
 			return Property();
-		if (!unpackNumber(element->Attribute("b"), cnt, &b))
+		if (!unpackNumber(element->Attribute("b"), ctx.Arguments, &b))
 			return Property();
 
 		return Property::fromRGB(RGB(r, g, b));
 	} else {
 		Vector v;
-		if (!unpackVector(attrib, cnt, &v))
+		if (!unpackVector(attrib, ctx.Arguments, &v))
 			return Property();
 
 		return Property::fromRGB(RGB(v.x, v.y, v.z));
 	}
 }
 
-static Property parseSpectrum(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static Property parseSpectrum(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	auto intent = element->Attribute("intent");
 	(void)intent;
 
 	auto filename = element->Attribute("filename");
 	if (filename) { // Load from .spd files!
-		// TODO
-		return Property();
+		const std::string unpacked_filename = unpackValues(filename, ctx.Arguments);
+		const std::string full_path			= resolvePath(unpacked_filename, ctx.LookupPaths);
+
+		if (full_path.empty())
+			throw std::runtime_error("File " + std::string(unpacked_filename) + " not found");
+
+		std::vector<int> wvls;
+		std::vector<Number> weights;
+		std::ifstream stream(full_path, std::ios::in);
+		std::string line;
+		while (std::getline(stream, line)) {
+			size_t comment_start = line.find_first_of('#');
+			const auto part		 = line.substr(0, comment_start);
+			if (part.empty())
+				continue;
+
+			Number tmp[2];
+			int i = _parseNumber(part, tmp, 2);
+			if (i == 2) {
+				wvls.push_back((int)tmp[0]);
+				weights.push_back(tmp[1]);
+			}
+		}
+
+		return Property::fromSpectrum(Spectrum(wvls, weights));
 	} else {
 		auto value = element->Attribute("value");
 		if (!value)
 			return Property();
 
-		const auto valueStr = unpackValues(value, cnt);
+		const auto valueStr = unpackValues(value, ctx.Arguments);
 
-		// TODO Parse string
-		return Property();
+		constexpr size_t MAX_SPEC = 1024;
+		Number tmp[MAX_SPEC];
+		auto c = _parseNumber(valueStr, tmp, MAX_SPEC);
+
+		if (c == 1) { // Uniform
+			return Property::fromSpectrum(Spectrum(tmp[0]));
+		} else if (c % 2 == 0) { // Wavelength + Weight pairs
+			std::vector<int> wvls;
+			std::vector<Number> weights;
+			wvls.resize(c / 2);
+			weights.resize(c / 2);
+
+			for (int i = 0; i < c / 2; ++i) {
+				wvls[i]	   = tmp[i * 2];
+				weights[i] = tmp[i * 2 + 1];
+			}
+			return Property::fromSpectrum(Spectrum(wvls, weights));
+		} else {
+			return Property();
+		}
 	}
 }
 
-static Property parseBlackbody(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static Property parseBlackbody(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	Number temp, scale;
-	if (!unpackNumber(element->Attribute("temperature"), cnt, &temp))
+	if (!unpackNumber(element->Attribute("temperature"), ctx.Arguments, &temp))
 		return Property();
 
-	if (!unpackNumber(element->Attribute("scale"), cnt, &scale))
+	if (!unpackNumber(element->Attribute("scale"), ctx.Arguments, &scale))
 		scale = Number(1);
 
 	return Property::fromBlackbody(Blackbody(temp, scale));
 }
 
-static Property parseString(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static Property parseString(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	auto attrib = element->Attribute("value");
 	if (!attrib)
 		return Property();
-	return Property::fromString(unpackValues(attrib, cnt));
+	return Property::fromString(unpackValues(attrib, ctx.Arguments));
 }
 
 // ---------- Transform Parameter
-// Declaration
-Transform parseInnerMatrix(const ArgumentContainer&, const tinyxml2::XMLElement*);
-
-Transform parseTransformTranslate(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+Transform parseTransformTranslate(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	Vector delta;
 	auto value = element->Attribute("value");
 	if (value) {
-		if (!unpackVector(value, cnt, &delta))
+		if (!unpackVector(value, ctx.Arguments, &delta))
 			delta = Vector(0, 0, 0);
 	} else {
-		if (!unpackNumber(element->Attribute("x"), cnt, &delta.x))
+		if (!unpackNumber(element->Attribute("x"), ctx.Arguments, &delta.x))
 			delta.x = 0;
-		if (!unpackNumber(element->Attribute("y"), cnt, &delta.y))
+		if (!unpackNumber(element->Attribute("y"), ctx.Arguments, &delta.y))
 			delta.y = 0;
-		if (!unpackNumber(element->Attribute("z"), cnt, &delta.z))
+		if (!unpackNumber(element->Attribute("z"), ctx.Arguments, &delta.z))
 			delta.z = 0;
 	}
 
 	return Transform::fromTranslation(delta);
 }
 
-Transform parseTransformScale(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+Transform parseTransformScale(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	Vector scale;
 	auto uniformScaleA = element->Attribute("value");
 	if (uniformScaleA) {
-		if (!unpackVector(uniformScaleA, cnt, &scale, Number(1)))
+		if (!unpackVector(uniformScaleA, ctx.Arguments, &scale, Number(1)))
 			scale = Vector(1, 1, 1);
 	} else {
-		if (!unpackNumber(element->Attribute("x"), cnt, &scale.x))
+		if (!unpackNumber(element->Attribute("x"), ctx.Arguments, &scale.x))
 			scale.x = 1;
-		if (!unpackNumber(element->Attribute("y"), cnt, &scale.y))
+		if (!unpackNumber(element->Attribute("y"), ctx.Arguments, &scale.y))
 			scale.y = 1;
-		if (!unpackNumber(element->Attribute("z"), cnt, &scale.z))
+		if (!unpackNumber(element->Attribute("z"), ctx.Arguments, &scale.z))
 			scale.z = 1;
 	}
 
 	return Transform::fromScale(scale);
 }
 
-Transform parseTransformRotate(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+Transform parseTransformRotate(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	Vector axis;
 	auto value = element->Attribute("axis");
 	if (value) {
-		if (!unpackVector(value, cnt, &axis))
+		if (!unpackVector(value, ctx.Arguments, &axis))
 			axis = Vector(0, 0, 1);
 	} else {
-		if (!unpackNumber(element->Attribute("x"), cnt, &axis.x))
+		if (!unpackNumber(element->Attribute("x"), ctx.Arguments, &axis.x))
 			axis.x = 0;
-		if (!unpackNumber(element->Attribute("y"), cnt, &axis.y))
+		if (!unpackNumber(element->Attribute("y"), ctx.Arguments, &axis.y))
 			axis.y = 0;
-		if (!unpackNumber(element->Attribute("z"), cnt, &axis.z))
+		if (!unpackNumber(element->Attribute("z"), ctx.Arguments, &axis.z))
 			axis.z = 1;
 	}
 
 	Number angle;
-	if (!unpackNumber(element->Attribute("angle"), cnt, &angle))
+	if (!unpackNumber(element->Attribute("angle"), ctx.Arguments, &angle))
 		return Transform::fromIdentity();
 
 	return Transform::fromRotation(axis, angle);
 }
 
-Transform parseTransformLookAt(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+Transform parseTransformLookAt(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	Vector origin, target, up;
-	if (!unpackVector(element->Attribute("origin"), cnt, &origin))
+	if (!unpackVector(element->Attribute("origin"), ctx.Arguments, &origin))
 		return Transform::fromIdentity();
 
-	if (!unpackVector(element->Attribute("target"), cnt, &target))
+	if (!unpackVector(element->Attribute("target"), ctx.Arguments, &target))
 		return Transform::fromIdentity();
 
-	if (!unpackVector(element->Attribute("up"), cnt, &up))
+	if (!unpackVector(element->Attribute("up"), ctx.Arguments, &up))
 		up = Vector(0, 0, 1);
 
 	return Transform::fromLookAt(origin, target, up);
 }
 
-Transform parseTransformMatrix(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+Transform parseTransformMatrix(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	auto value = element->Attribute("value");
 	if (!value)
 		return Transform::fromIdentity();
 
-	const auto valueStr = unpackValues(value, cnt);
+	const auto valueStr = unpackValues(value, ctx.Arguments);
 	Number tmp[16];
 	auto c = _parseNumber(valueStr, tmp, 16);
 
@@ -539,7 +598,7 @@ Transform parseTransformMatrix(const ArgumentContainer& cnt, const tinyxml2::XML
 	return Transform::fromIdentity();
 }
 
-using TransformParseCallback = Transform (*)(const ArgumentContainer&, const tinyxml2::XMLElement*);
+using TransformParseCallback = Transform (*)(const ParseContext&, const tinyxml2::XMLElement*);
 struct {
 	const char* Name;
 	TransformParseCallback Callback;
@@ -553,7 +612,7 @@ struct {
 	{ nullptr, nullptr }
 };
 
-Transform parseInnerMatrix(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+Transform parseInnerMatrix(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	Transform inner = Transform::fromIdentity();
 	for (auto childElement = element->FirstChildElement();
@@ -562,7 +621,7 @@ Transform parseInnerMatrix(const ArgumentContainer& cnt, const tinyxml2::XMLElem
 
 		for (int i = 0; _transformParseElements[i].Name; ++i) {
 			if (strcmp(childElement->Name(), _transformParseElements[i].Name) == 0) {
-				inner = _transformParseElements[i].Callback(cnt, childElement) * inner;
+				inner = _transformParseElements[i].Callback(ctx, childElement) * inner;
 				break;
 			}
 		}
@@ -571,13 +630,13 @@ Transform parseInnerMatrix(const ArgumentContainer& cnt, const tinyxml2::XMLElem
 	return inner;
 }
 
-static Property parseTransform(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static Property parseTransform(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
-	const auto transform = parseInnerMatrix(cnt, element);
+	const auto transform = parseInnerMatrix(ctx, element);
 	return Property::fromTransform(transform);
 }
 
-static Property parseAnimation(const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+static Property parseAnimation(const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	Animation anim;
 	for (auto childElement = element->FirstChildElement();
@@ -587,16 +646,16 @@ static Property parseAnimation(const ArgumentContainer& cnt, const tinyxml2::XML
 			throw std::runtime_error("Animation entries are only of type transform");
 
 		Number time;
-		if (!unpackNumber(childElement->Attribute("time"), cnt, &time))
+		if (!unpackNumber(childElement->Attribute("time"), ctx.Arguments, &time))
 			throw std::runtime_error("Animation entry missing time attribute");
 
-		anim.addKeyFrame(time, parseInnerMatrix(cnt, childElement));
+		anim.addKeyFrame(time, parseInnerMatrix(ctx, childElement));
 	}
 
 	return Property::fromAnimation(anim);
 }
 
-using PropertyParseCallback = Property (*)(const ArgumentContainer&, const tinyxml2::XMLElement*);
+using PropertyParseCallback = Property (*)(const ParseContext&, const tinyxml2::XMLElement*);
 
 static const struct {
 	const char* Name;
@@ -616,7 +675,7 @@ static const struct {
 	{ nullptr, nullptr }
 };
 
-bool parseParameter(Object* obj, const ArgumentContainer& cnt, const tinyxml2::XMLElement* element)
+bool parseParameter(Object* obj, const ParseContext& ctx, const tinyxml2::XMLElement* element)
 {
 	auto name = element->Attribute("name");
 	if (!name)
@@ -624,7 +683,7 @@ bool parseParameter(Object* obj, const ArgumentContainer& cnt, const tinyxml2::X
 
 	for (int i = 0; _propertyParseElement[i].Name; ++i) {
 		if (strcmp(element->Name(), _propertyParseElement[i].Name) == 0) {
-			auto prop = _propertyParseElement[i].Callback(cnt, element);
+			auto prop = _propertyParseElement[i].Callback(ctx, element);
 			if (prop.isValid())
 				obj->setProperty(name, prop);
 			return true;
@@ -688,28 +747,18 @@ static void handleReference(Object* obj, const ArgumentContainer& cnt, const IDC
 	}
 }
 
-static void parseObject(Object*, const ArgumentContainer&, const LookupPaths&, IDContainer&, const tinyxml2::XMLElement*, int);
-static void handleInclude(Object* obj, const ArgumentContainer& cnt, const LookupPaths& paths, IDContainer& ids,
+static void parseObject(Object*, const ParseContext&, IDContainer&, const tinyxml2::XMLElement*, int);
+static void handleInclude(Object* obj, const ParseContext& ctx, IDContainer& ids,
 						  const tinyxml2::XMLElement* element)
 {
 	auto filename = element->Attribute("filename");
 	if (!filename)
 		throw std::runtime_error("Invalid include element");
 
-	const std::string unpacked_filename = unpackValues(filename, cnt);
+	const std::string unpacked_filename = unpackValues(filename, ctx.Arguments);
+	const std::string full_path			= resolvePath(unpacked_filename, ctx.LookupPaths);
 
-	std::string full_path;
-	for (const auto& dir : paths) {
-		const std::string p = concactPaths(dir, unpacked_filename);
-		if (doesFileExist(p)) {
-			full_path = p;
-			break;
-		}
-	}
-
-	if (full_path.empty() && doesFileExist(unpacked_filename))
-		full_path = unpacked_filename;
-	else
+	if (full_path.empty())
 		throw std::runtime_error("File " + std::string(unpacked_filename) + " not found");
 
 	// Load xml
@@ -723,7 +772,7 @@ static void handleInclude(Object* obj, const ArgumentContainer& cnt, const Looku
 	// Ignore version
 
 	// Parse as scene
-	parseObject(obj, cnt, paths, ids, rootScene, PF_C_SCENE);
+	parseObject(obj, ctx, ids, rootScene, PF_C_SCENE);
 }
 
 static const struct {
@@ -745,16 +794,17 @@ static const struct {
 	{ nullptr, ObjectType(0), 0 }
 };
 
-static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, const LookupPaths& paths, IDContainer& ids, const tinyxml2::XMLElement* element, int flags)
+static void parseObject(Object* obj, const ParseContext& ctx, IDContainer& ids, const tinyxml2::XMLElement* element, int flags)
 {
 	// Copy container to make sure recursive elements do not overwrite it
-	ArgumentContainer cnt = prev_cnt;
+	ArgumentContainer cnt = ctx.Arguments;
+	ParseContext nextCtx{ cnt, ctx.LookupPaths };
 
 	for (auto childElement = element->FirstChildElement();
 		 childElement;
 		 childElement = childElement->NextSiblingElement()) {
 
-		if ((flags & PF_PARAMETER) && parseParameter(obj, cnt, childElement))
+		if ((flags & PF_PARAMETER) && parseParameter(obj, nextCtx, childElement))
 			continue;
 
 		if ((flags & PF_REFERENCE) && strcmp(childElement->Name(), "ref") == 0) {
@@ -762,7 +812,7 @@ static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, const Lo
 		} else if ((flags & PF_DEFAULT) && strcmp(childElement->Name(), "default") == 0) {
 			handleDefault(cnt, childElement);
 		} else if ((flags & PF_INCLUDE) && strcmp(childElement->Name(), "include") == 0) {
-			handleInclude(obj, cnt, paths, ids, element);
+			handleInclude(obj, nextCtx, ids, element);
 		} else if ((flags & PF_ALIAS) && strcmp(childElement->Name(), "alias") == 0) {
 			handleAlias(ids, childElement);
 		} else if ((flags & PF_NULL) && strcmp(childElement->Name(), "null") == 0) {
@@ -774,7 +824,7 @@ static void parseObject(Object* obj, const ArgumentContainer& prev_cnt, const Lo
 				if ((OT_PF(_parseElements[i].Type) & flags)
 					&& strcmp(childElement->Name(), _parseElements[i].Name) == 0) {
 					child = std::make_shared<Object>(_parseElements[i].Type);
-					parseObject(child.get(), cnt, paths, ids, childElement, _parseElements[i].Flags);
+					parseObject(child.get(), nextCtx, ids, childElement, _parseElements[i].Flags);
 					break;
 				}
 			}
@@ -820,7 +870,7 @@ public:
 			throw std::runtime_error("Invalid version element");
 		}
 
-		parseObject(&scene, cnt, paths, idcontainer, rootScene, PF_C_SCENE);
+		parseObject(&scene, ParseContext{ cnt, paths }, idcontainer, rootScene, PF_C_SCENE);
 
 		return scene;
 	}

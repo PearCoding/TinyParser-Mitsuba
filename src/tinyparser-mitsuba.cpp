@@ -812,11 +812,11 @@ static void parseObject(Object* obj, const ParseContext& ctx, IDContainer& ids, 
 			continue;
 
 		if ((flags & PF_REFERENCE) && strcmp(childElement->Name(), "ref") == 0) {
-			handleReference(obj, cnt, ids, element, flags);
+			handleReference(obj, cnt, ids, childElement, flags);
 		} else if ((flags & PF_DEFAULT) && strcmp(childElement->Name(), "default") == 0) {
 			handleDefault(cnt, childElement);
 		} else if ((flags & PF_INCLUDE) && strcmp(childElement->Name(), "include") == 0) {
-			handleInclude(obj, nextCtx, ids, element);
+			handleInclude(obj, nextCtx, ids, childElement);
 		} else if ((flags & PF_ALIAS) && strcmp(childElement->Name(), "alias") == 0) {
 			handleAlias(ids, childElement);
 		} else if ((flags & PF_NULL) && strcmp(childElement->Name(), "null") == 0) {

@@ -697,19 +697,21 @@ static void handleInclude(Object* obj, const ArgumentContainer& cnt, const Looku
 	if (!filename)
 		throw std::runtime_error("Invalid include element");
 
+	const std::string unpacked_filename = unpackValues(filename, cnt);
+
 	std::string full_path;
 	for (const auto& dir : paths) {
-		const std::string p = concactPaths(dir, filename);
+		const std::string p = concactPaths(dir, unpacked_filename);
 		if (doesFileExist(p)) {
 			full_path = p;
 			break;
 		}
 	}
 
-	if (full_path.empty() && doesFileExist(filename))
-		full_path = filename;
+	if (full_path.empty() && doesFileExist(unpacked_filename))
+		full_path = unpacked_filename;
 	else
-		throw std::runtime_error("File " + std::string(filename) + " not found");
+		throw std::runtime_error("File " + std::string(unpacked_filename) + " not found");
 
 	// Load xml
 	tinyxml2::XMLDocument xml;

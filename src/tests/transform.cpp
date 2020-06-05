@@ -70,9 +70,9 @@ TEST_CASE("Scale", "[transform]")
 
 TEST_CASE("Rotation", "[transform]")
 {
-	constexpr auto angle = Number(3.141592) / 2;
-	const auto ca		 = std::cos(angle);
-	const auto sa		 = std::sin(angle);
+	constexpr auto angle = Number(180);
+	const auto ca		 = std::cos(degToRad(angle));
+	const auto sa		 = std::sin(degToRad(angle));
 
 	Transform M = Transform::fromRotation(Vector(1, 0, 0), angle); // Clockwise order
 	REQUIRE(M(0, 0) == 1);

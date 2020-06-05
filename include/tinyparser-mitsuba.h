@@ -51,6 +51,10 @@ using Number = float;
 
 using Integer = int64_t;
 
+constexpr Number TPM_PI = Number(3.14159265358979323846);
+constexpr Number degToRad(Number v) { return v * TPM_PI / Number(180); }
+constexpr Number radToDeg(Number v) { return v / TPM_PI * Number(180); }
+
 // --------------- Enums
 enum ObjectType {
 	OT_SCENE = 0,
@@ -134,7 +138,7 @@ struct TPM_LIB Transform {
 	static Transform fromIdentity();
 	static Transform fromTranslation(const Vector& delta);
 	static Transform fromScale(const Vector& scale);
-	static Transform fromRotation(const Vector& axis, Number angle);
+	static Transform fromRotation(const Vector& axis, Number angle_degree);
 	static Transform fromLookAt(const Vector& origin, const Vector& target, const Vector& up);
 
 private:

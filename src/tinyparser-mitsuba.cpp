@@ -72,12 +72,13 @@ Transform Transform::fromScale(const Vector& scale)
 										 Number(0), Number(0), Number(0), Number(1) } });
 }
 
-Transform Transform::fromRotation(const Vector& axis, Number angle)
+Transform Transform::fromRotation(const Vector& axis, Number angle_degree)
 {
-	const Vector aa = normalize(axis);
-	const auto sa	= std::sin(angle);
-	const auto ca	= std::cos(angle);
-	const auto nca	= Number(1) - ca;
+	const auto angle_rad = degToRad(angle_degree);
+	const Vector aa		 = normalize(axis);
+	const auto sa		 = std::sin(angle_rad);
+	const auto ca		 = std::cos(angle_rad);
+	const auto nca		 = Number(1) - ca;
 
 	return Transform(Transform::Array{ { ca + aa.x * aa.x * nca, aa.x * aa.y * nca - aa.z * sa, aa.x * aa.z * nca + aa.y * sa, Number(0),
 										 aa.y * aa.x * nca + aa.z * sa, ca + aa.y * aa.y * nca, aa.y * aa.z * nca - aa.x * sa, Number(0),
@@ -221,7 +222,7 @@ static inline bool unpackNumber(const char* str, const ArgumentContainer& cnt, N
 	return _parseNumber(valueStr, value, 1) == 1;
 }
 
-static inline bool unpackVector(const char* str, const ArgumentContainer& cnt, Vector* value)
+static inline bool unpackVector(const char* str, const ArgumentContainer& cnt, Vector* value, Number fill = Number(0))
 {
 	if (!str)
 		return false;
@@ -231,8 +232,8 @@ static inline bool unpackVector(const char* str, const ArgumentContainer& cnt, V
 	auto c = _parseNumber(valueStr, tmp, 3);
 	if (c >= 1) {
 		value->x = tmp[0];
-		value->y = c >= 2 ? tmp[1] : Number(0);
-		value->z = c >= 3 ? tmp[2] : Number(0);
+		value->y = c >= 2 ? tmp[1] : fill;
+		value->z = c >= 3 ? tmp[2] : fill;
 		return true;
 	} else {
 		return false;
@@ -451,7 +452,7 @@ Transform parseTransformScale(const ArgumentContainer& cnt, const tinyxml2::XMLE
 	Vector scale;
 	auto uniformScaleA = element->Attribute("value");
 	if (uniformScaleA) {
-		if (!unpackVector(uniformScaleA, cnt, &scale))
+		if (!unpackVector(uniformScaleA, cnt, &scale, Number(1)))
 			scale = Vector(1, 1, 1);
 	} else {
 		if (!unpackNumber(element->Attribute("x"), cnt, &scale.x))

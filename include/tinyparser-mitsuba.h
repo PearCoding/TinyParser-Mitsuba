@@ -100,11 +100,11 @@ struct TPM_LIB Vector {
 	{
 	}
 };
-inline TPM_NODISCARD bool operator==(const Vector& a, const Vector& b)
+TPM_NODISCARD inline bool operator==(const Vector& a, const Vector& b)
 {
 	return a.x == b.x && a.y == b.y && a.z == b.z;
 }
-inline TPM_NODISCARD bool operator!=(const Vector& a, const Vector& b)
+TPM_NODISCARD inline bool operator!=(const Vector& a, const Vector& b)
 {
 	return !(a == b);
 }
@@ -178,11 +178,11 @@ struct TPM_LIB RGB {
 	{
 	}
 };
-inline TPM_NODISCARD bool operator==(const RGB& a, const RGB& b)
+TPM_NODISCARD inline bool operator==(const RGB& a, const RGB& b)
 {
 	return a.r == b.r && a.g == b.g && a.b == b.b;
 }
-inline TPM_NODISCARD bool operator!=(const RGB& a, const RGB& b)
+TPM_NODISCARD inline bool operator!=(const RGB& a, const RGB& b)
 {
 	return !(a == b);
 }
@@ -202,11 +202,11 @@ public:
 	{
 	}
 
-	inline TPM_NODISCARD bool isUniform() const { return mWavelengths.size() == 0 && mWeights.size() == 1; }
-	inline TPM_NODISCARD Number uniformValue() const { return mWeights.front(); }
+	TPM_NODISCARD inline bool isUniform() const { return mWavelengths.size() == 0 && mWeights.size() == 1; }
+	TPM_NODISCARD inline Number uniformValue() const { return mWeights.front(); }
 
-	inline TPM_NODISCARD const std::vector<int>& wavelengths() const { return mWavelengths; }
-	inline TPM_NODISCARD const std::vector<Number>& weights() const { return mWeights; }
+	TPM_NODISCARD inline const std::vector<int>& wavelengths() const { return mWavelengths; }
+	TPM_NODISCARD inline const std::vector<Number>& weights() const { return mWeights; }
 
 private:
 	std::vector<int> mWavelengths;
@@ -222,11 +222,11 @@ struct TPM_LIB Blackbody {
 	{
 	}
 };
-inline TPM_NODISCARD bool operator==(const Blackbody& a, const Blackbody& b)
+TPM_NODISCARD inline bool operator==(const Blackbody& a, const Blackbody& b)
 {
 	return a.temperature == b.temperature && a.scale == b.scale;
 }
-inline TPM_NODISCARD bool operator!=(const Blackbody& a, const Blackbody& b)
+TPM_NODISCARD inline bool operator!=(const Blackbody& a, const Blackbody& b)
 {
 	return !(a == b);
 }
@@ -245,8 +245,8 @@ public:
 	Property& operator=(const Property& other) = default;
 	Property& operator=(Property&& other) = default;
 
-	inline TPM_NODISCARD PropertyType type() const { return mType; }
-	inline TPM_NODISCARD bool isValid() const { return mType != PT_NONE; }
+	TPM_NODISCARD inline PropertyType type() const { return mType; }
+	TPM_NODISCARD inline bool isValid() const { return mType != PT_NONE; }
 
 	inline Number getNumber(Number def = Number(0), bool* ok = nullptr) const
 	{
@@ -260,7 +260,7 @@ public:
 			return def;
 		}
 	}
-	static TPM_NODISCARD inline Property fromNumber(Number v)
+	TPM_NODISCARD static inline Property fromNumber(Number v)
 	{
 		Property p(PT_NUMBER);
 		p.mNumber = v;
@@ -279,7 +279,7 @@ public:
 			return def;
 		}
 	}
-	static TPM_NODISCARD inline Property fromInteger(Integer v)
+	TPM_NODISCARD static inline Property fromInteger(Integer v)
 	{
 		Property p(PT_INTEGER);
 		p.mInteger = v;
@@ -298,7 +298,7 @@ public:
 			return def;
 		}
 	}
-	static TPM_NODISCARD inline Property fromBool(bool b)
+	TPM_NODISCARD static inline Property fromBool(bool b)
 	{
 		Property p(PT_BOOL);
 		p.mBool = b;
@@ -317,7 +317,7 @@ public:
 			return def;
 		}
 	}
-	static TPM_NODISCARD inline Property fromVector(const Vector& v)
+	TPM_NODISCARD static inline Property fromVector(const Vector& v)
 	{
 		Property p(PT_VECTOR);
 		p.mVector = v;
@@ -336,7 +336,7 @@ public:
 			return def;
 		}
 	}
-	static TPM_NODISCARD inline Property fromTransform(const Transform& v)
+	TPM_NODISCARD static inline Property fromTransform(const Transform& v)
 	{
 		Property p(PT_TRANSFORM);
 		p.mTransform = v;
@@ -355,7 +355,7 @@ public:
 			return def;
 		}
 	}
-	static TPM_NODISCARD inline Property fromRGB(const RGB& rgb)
+	TPM_NODISCARD static inline Property fromRGB(const RGB& rgb)
 	{
 		Property p(PT_RGB);
 		p.mRGB = rgb;
@@ -374,7 +374,7 @@ public:
 			return def;
 		}
 	}
-	static TPM_NODISCARD inline Property fromString(const std::string& v)
+	TPM_NODISCARD static inline Property fromString(const std::string& v)
 	{
 		Property p(PT_STRING);
 		p.mString = v;
@@ -393,7 +393,7 @@ public:
 			return def;
 		}
 	}
-	static TPM_NODISCARD inline Property fromSpectrum(const Spectrum& spec)
+	TPM_NODISCARD static inline Property fromSpectrum(const Spectrum& spec)
 	{
 		Property p(PT_SPECTRUM);
 		p.mSpectrum = spec;
@@ -412,7 +412,7 @@ public:
 			return def;
 		}
 	}
-	static TPM_NODISCARD inline Property fromBlackbody(const Blackbody& v)
+	TPM_NODISCARD static inline Property fromBlackbody(const Blackbody& v)
 	{
 		Property p(PT_BLACKBODY);
 		p.mBlackbody = v;
@@ -431,7 +431,7 @@ public:
 			return def;
 		}
 	}
-	static TPM_NODISCARD inline Property fromAnimation(const Animation& v)
+	TPM_NODISCARD static inline Property fromAnimation(const Animation& v)
 	{
 		Property p(PT_ANIMATION);
 		p.mAnimation = v;
@@ -477,26 +477,26 @@ public:
 	Object& operator=(const Object& other) = default;
 	Object& operator=(Object&& other) = default;
 
-	inline TPM_NODISCARD ObjectType type() const { return mType; }
-	inline TPM_NODISCARD const std::string& pluginType() const { return mPluginType; }
+	TPM_NODISCARD inline ObjectType type() const { return mType; }
+	TPM_NODISCARD inline const std::string& pluginType() const { return mPluginType; }
 
-	inline TPM_NODISCARD Property property(const std::string& key) const
+	TPM_NODISCARD inline Property property(const std::string& key) const
 	{
 		return mProperties.count(key) ? mProperties.at(key) : Property();
 	}
 
 	inline void setProperty(const std::string& key, const Property& prop) { mProperties[key] = prop; }
-	inline TPM_NODISCARD const std::unordered_map<std::string, Property>& properties() const { return mProperties; }
+	TPM_NODISCARD inline const std::unordered_map<std::string, Property>& properties() const { return mProperties; }
 
-	inline TPM_NODISCARD Property& operator[](const std::string& key) { return mProperties[key]; }
-	inline TPM_NODISCARD Property operator[](const std::string& key) const { return property(key); }
+	TPM_NODISCARD inline Property& operator[](const std::string& key) { return mProperties[key]; }
+	TPM_NODISCARD inline Property operator[](const std::string& key) const { return property(key); }
 
 	inline void addAnonymousChild(const std::shared_ptr<Object>& obj) { mChildren.push_back(obj); }
-	inline TPM_NODISCARD const std::vector<std::shared_ptr<Object>>& anonymousChildren() const { return mChildren; }
+	TPM_NODISCARD inline const std::vector<std::shared_ptr<Object>>& anonymousChildren() const { return mChildren; }
 
 	inline void addNamedChild(const std::string& key, const std::shared_ptr<Object>& obj) { mNamedChildren[key] = obj; }
-	inline TPM_NODISCARD const std::unordered_map<std::string, std::shared_ptr<Object>>& namedChildren() const { return mNamedChildren; }
-	inline TPM_NODISCARD std::shared_ptr<Object> namedChild(const std::string& key) const
+	TPM_NODISCARD inline const std::unordered_map<std::string, std::shared_ptr<Object>>& namedChildren() const { return mNamedChildren; }
+	TPM_NODISCARD inline std::shared_ptr<Object> namedChild(const std::string& key) const
 	{
 		return mNamedChildren.count(key) ? mNamedChildren.at(key) : nullptr;
 	}
@@ -520,9 +520,9 @@ public:
 	Scene& operator=(const Scene& other) = default;
 	Scene& operator=(Scene&& other) = default;
 
-	inline TPM_NODISCARD int versionMajor() const { return mVersionMajor; }
-	inline TPM_NODISCARD int versionMinor() const { return mVersionMinor; }
-	inline TPM_NODISCARD int versionPatch() const { return mVersionPatch; }
+	TPM_NODISCARD inline int versionMajor() const { return mVersionMajor; }
+	TPM_NODISCARD inline int versionMinor() const { return mVersionMinor; }
+	TPM_NODISCARD inline int versionPatch() const { return mVersionPatch; }
 
 private:
 	inline Scene()
@@ -542,20 +542,20 @@ class TPM_LIB SceneLoader {
 public:
 	inline SceneLoader() = default;
 
-	inline TPM_NODISCARD Scene loadFromFile(const std::string& path)
+	TPM_NODISCARD inline Scene loadFromFile(const std::string& path)
 	{
 		return loadFromFile(path.c_str());
 	}
-	inline TPM_NODISCARD Scene loadFromString(const std::string& str);
+	TPM_NODISCARD inline Scene loadFromString(const std::string& str);
 
 #ifdef TPM_HAS_STRING_VIEW
-	inline TPM_NODISCARD Scene loadFromString(const std::string_view& str)
+	TPM_NODISCARD inline Scene loadFromString(const std::string_view& str)
 	{
 		return loadFromString(str.data(), str.size());
 	}
 #endif
 
-	// static TPM_NODISCARD Scene loadFromStream(std::istream& stream);
+	// TPM_NODISCARD static Scene loadFromStream(std::istream& stream);
 
 	TPM_NODISCARD Scene loadFromFile(const char* path);
 	TPM_NODISCARD Scene loadFromString(const char* str);

@@ -559,6 +559,7 @@ public:
 
 	TPM_NODISCARD Scene loadFromFile(const char* path);
 	TPM_NODISCARD Scene loadFromString(const char* str);
+	TPM_NODISCARD Scene loadFromString(const char* str, size_t max_len);
 	TPM_NODISCARD Scene loadFromMemory(const uint8_t* data, size_t size);
 
 	inline void addLookupDir(const std::string& path)

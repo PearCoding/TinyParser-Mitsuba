@@ -937,6 +937,13 @@ Scene SceneLoader::loadFromString(const char* str)
 	return InternalSceneLoader::loadFromXML(*this, xml);
 }
 
+Scene SceneLoader::loadFromString(const char* str, size_t max_len)
+{
+	tinyxml2::XMLDocument xml;
+	xml.Parse(str, max_len);
+	return InternalSceneLoader::loadFromXML(*this, xml);
+}
+
 /*Scene SceneLoader::loadFromStream(std::istream& stream)
 {
 	// TODO

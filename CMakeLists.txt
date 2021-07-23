@@ -25,6 +25,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	option(GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." OFF)
 endif()
 option(BUILD_DOCUMENTATION 	"Build documentation with doxygen." ${TPM_BUILD_EXTRA_DEFAULT})
+option(BUILD_CLI_WRAPPER 	"Build wrapper for C++/CLI to be used with C# or other frameworks" ${TPM_BUILD_EXTRA_DEFAULT})
 option(BUILD_DUMP_UTILITY 	"Build utility tool to dump parsable files." ${TPM_BUILD_EXTRA_DEFAULT})
 
 #SETS
@@ -81,6 +82,36 @@ endif()
 # Coverage End
 if(GENERATE_COVERAGE AND (CMAKE_BUILD_TYPE MATCHES Debug))
 	include(cmake/Coverage.cmake)
+endif()
+
+# Wrapper
+if(BUILD_CLI_WRAPPER)
+	set(WRAPPER_CLI_FILES
+		src/wrapper/cli/wrapper.cpp
+		src/wrapper/cli/wrapper.h)
+	add_library(${TPM_TARGET}_cli SHARED ${WRAPPER_CLI_FILES}) 
+	target_include_directories(${TPM_TARGET}_cli
+		PUBLIC 
+			$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+			$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+	target_link_libraries(${TPM_TARGET}_cli PRIVATE ${TPM_TARGET})
+	target_compile_features(${TPM_TARGET}_cli PUBLIC cxx_std_11)
+	set_target_properties(${TPM_TARGET}_cli PROPERTIES
+		VERSION "${TPM_LIB_VERSION}"
+		SOVERSION "${TPM_LIB_SOVERSION}"
+		COMMON_LANGUAGE_RUNTIME ""
+		VS_GLOBAL_ROOTNAMESPACE "TinyParserMitsuba"
+		DOTNET_TARGET_FRAMEWORK "netcoreapp5.0")
+	set_property(TARGET ${TPM_TARGET}_cli PROPERTY VS_DOTNET_REFERENCES
+		"System"
+		"System.Core")
+	# The following is only used on windows as VS integration with target Ninja (not target VS!) does not push the /cli command
+	if(MSVC)
+		target_compile_options(${TPM_TARGET}_cli PRIVATE /clr)
+		target_compile_options(${TPM_TARGET}_cli PRIVATE /fp:precise)
+		string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+		string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+	endif()
 endif()
 
 # Documentation

@@ -11,7 +11,7 @@ TEST_CASE("Property Construction", "[property]")
 	REQUIRE(Property::fromInteger(Integer(0)).type() == PT_INTEGER);
 	REQUIRE(Property::fromBool(false).type() == PT_BOOL);
 	REQUIRE(Property::fromVector(Vector(0, 0, 0)).type() == PT_VECTOR);
-	REQUIRE(Property::fromColor(Color(0, 0, 0)).type() == PT_RGB);
+	REQUIRE(Property::fromColor(Color(0, 0, 0)).type() == PT_COLOR);
 	REQUIRE(Property::fromTransform(Transform::fromIdentity()).type() == PT_TRANSFORM);
 	REQUIRE(Property::fromString("").type() == PT_STRING);
 	REQUIRE(Property::fromSpectrum(Spectrum()).type() == PT_SPECTRUM);
@@ -23,7 +23,7 @@ TEST_CASE("Property Access", "[property]")
 	REQUIRE(Property::fromInteger(Integer(1)).getInteger() == Integer(1));
 	REQUIRE(Property::fromBool(true).getBool() == true);
 	REQUIRE(Property::fromVector(Vector(1, 0, 0)).getVector() == Vector(1, 0, 0));
-	REQUIRE(Property::fromColor(Color(1, 0, 0)).getRGB() == Color(1, 0, 0));
+	REQUIRE(Property::fromColor(Color(1, 0, 0)).getColor() == Color(1, 0, 0));
 	//REQUIRE(Property::fromTransform(Transform()).getTransform() == Transform());
 	REQUIRE(Property::fromString("TEST").getString() == "TEST");
 	//REQUIRE(Property::fromSpectrum(Spectrum()).getSpectrum() == Spectrum());

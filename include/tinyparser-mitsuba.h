@@ -81,7 +81,7 @@ enum PropertyType {
 	PT_BOOL,
 	PT_INTEGER,
 	PT_NUMBER,
-	PT_RGB,
+	PT_COLOR,
 	PT_SPECTRUM,
 	PT_STRING,
 	PT_TRANSFORM,
@@ -343,9 +343,9 @@ public:
 		return p;
 	}
 
-	inline const Color& getRGB(const Color& def = Color(0, 0, 0), bool* ok = nullptr) const
+	inline const Color& getColor(const Color& def = Color(0, 0, 0), bool* ok = nullptr) const
 	{
-		if (mType == PT_RGB) {
+		if (mType == PT_COLOR) {
 			if (ok)
 				*ok = true;
 			return mRGB;
@@ -357,7 +357,7 @@ public:
 	}
 	TPM_NODISCARD static inline Property fromColor(const Color& rgb)
 	{
-		Property p(PT_RGB);
+		Property p(PT_COLOR);
 		p.mRGB = rgb;
 		return p;
 	}
@@ -546,7 +546,11 @@ public:
 	{
 		return loadFromFile(path.c_str());
 	}
-	TPM_NODISCARD inline Scene loadFromString(const std::string& str);
+
+	TPM_NODISCARD inline Scene loadFromString(const std::string& str)
+	{
+		return loadFromString(str.c_str());
+	}
 
 #ifdef TPM_HAS_STRING_VIEW
 	TPM_NODISCARD inline Scene loadFromString(const std::string_view& str)
@@ -573,6 +577,7 @@ public:
 	}
 
 	inline void disableLowerCaseConversion(bool b = true) { mDisableLowerCaseConversion = b; }
+	inline bool isLowerCaseConversionDisabled() const { return mDisableLowerCaseConversion; }
 
 private:
 	std::vector<std::string> mLookupPaths;

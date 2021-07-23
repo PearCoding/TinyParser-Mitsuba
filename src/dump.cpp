@@ -53,7 +53,7 @@ static const char* propertyTypeStr(PropertyType type)
 		return "integer";
 	case PT_NUMBER:
 		return "number";
-	case PT_RGB:
+	case PT_COLOR:
 		return "rgb";
 	case PT_SPECTRUM:
 		return "spectrum";
@@ -90,9 +90,9 @@ static std::string propertyValueStr(const Property& prop)
 		stream << prop.getNumber();
 		return stream.str();
 	}
-	case PT_RGB: {
+	case PT_COLOR: {
 		std::stringstream stream;
-		stream << "R: " << prop.getRGB().r << " G: " << prop.getRGB().g << " B: " << prop.getRGB().b;
+		stream << "R: " << prop.getColor().r << " G: " << prop.getColor().g << " B: " << prop.getColor().b;
 		return stream.str();
 	}
 		return "rgb";

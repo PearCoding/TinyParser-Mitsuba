@@ -153,7 +153,7 @@ before_script:
   - mkdir build
   - cd build
   - if [ $USE_COVERAGE == ON ]; then lcov --directory . --zerocounters; fi
-  - if [[ $TRAVIS_OS_NAME != "windows" ]]; export CXXFLAGS="-Wall -Wextra -Werror -Wpedantic"; fi
+  - if [[ $TRAVIS_OS_NAME != "windows" ]]; then export CXXFLAGS="-Wall -Wextra -Werror -Wpedantic"; fi
   - cmake -DCMAKE_BUILD_TYPE=Debug  ..
 script:
   - cmake --build .

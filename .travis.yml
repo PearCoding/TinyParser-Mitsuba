@@ -159,7 +159,7 @@ before_script:
   - if [ $USE_COVERAGE == ON ]; then lcov --directory . --zerocounters; fi
   - cmake -DCMAKE_BUILD_TYPE=Debug  ..
 script:
-  - make -j4
+  - cmake --build .
 after_success:
   - ctest --output-on-failure
   - if [ $USE_COVERAGE == ON ]; then make coveralls; fi

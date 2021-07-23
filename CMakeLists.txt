@@ -20,9 +20,9 @@ else()
 endif()
 
 if(WIN32)
-	set(TPM_BUILD_WIN32_DEFAULT OFF)
-else()
 	set(TPM_BUILD_WIN32_DEFAULT ON)
+else()
+	set(TPM_BUILD_WIN32_DEFAULT OFF)
 endif()
 
 option(BUILD_SHARED_LIBS 	"Build as shared library" OFF)

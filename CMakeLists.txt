@@ -105,8 +105,11 @@ if(BUILD_CLI_WRAPPER)
 	set_property(TARGET ${TPM_TARGET}_cli PROPERTY VS_DOTNET_REFERENCES
 		"System"
 		"System.Core")
-	# The following is only used on windows as VS integration with target Ninja (not target VS!) does not push the /cli command
-	if(MSVC)
+	# The following is only used on Windows as VS integration with generator Ninja (not generator VS!) does not push the /cli command
+	if(CMAKE_GENERATOR MATCHES "Visual Studio")
+		set(IS_VC ON)
+	endif()
+	if(MSVC AND NOT IS_VC)
 		target_compile_options(${TPM_TARGET}_cli PRIVATE /clr)
 		target_compile_options(${TPM_TARGET}_cli PRIVATE /fp:precise)
 		string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

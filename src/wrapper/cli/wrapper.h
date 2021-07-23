@@ -8,6 +8,8 @@
 #pragma managed
 
 #include <msclr\marshal_cppstd.h>
+
+namespace TinyParserMitsuba {
 using namespace System;
 using namespace System::Collections::Generic;
 
@@ -54,30 +56,33 @@ public:
         delete mInternal;
     }
 
-    property bool uniform {
-        bool get() {
-            return mInternal->isUniform();
-        }
+    property bool Uniform {
+        bool get() { return IsUniform(); }
     }
     
-    property int length {
-        int get() {
-            return mInternal->isUniform() ? 1 : mInternal->wavelengths().size();
-        }
+    property int Length {
+        int get() { return GetLength(); }
     }
 
-    property TPM_NAMESPACE::Number wavelenghts[int] {
+    property TPM_NAMESPACE::Number Wavelengths[int] {
         TPM_NAMESPACE::Number get(int i) {
             return mInternal->isUniform() ? 0 : mInternal->wavelengths().at(i);
         }
     }
 
-    property TPM_NAMESPACE::Number weights[int] {
+    property TPM_NAMESPACE::Number Weights[int] {
         TPM_NAMESPACE::Number get(int i) {
             return mInternal->isUniform() ? mInternal->uniformValue() : mInternal->weights().at(i);
         }
     }
 
+    int GetLength() { 
+        return mInternal->isUniform() ? 1 : mInternal->wavelengths().size();
+    }
+
+    bool IsUniform() {
+        return mInternal->isUniform();
+    }
 private:
     const TPM_NAMESPACE::Spectrum* mInternal;
 };
@@ -90,17 +95,21 @@ public:
         delete mInternal;
     }
 
-    property TPM_NAMESPACE::Number temperature {
-        TPM_NAMESPACE::Number get() {
-            return mInternal->temperature;
-        }
+    property TPM_NAMESPACE::Number Temperature {
+        TPM_NAMESPACE::Number get() { return GetTemperature(); }
     }
-    property TPM_NAMESPACE::Number scale {
-        TPM_NAMESPACE::Number get() {
-            return mInternal->scale;
-        }
+    
+    property TPM_NAMESPACE::Number Scale {
+        TPM_NAMESPACE::Number get() { return GetScale(); }
     }
 
+    TPM_NAMESPACE::Number GetTemperature() {
+        return mInternal->temperature;
+    }
+
+    TPM_NAMESPACE::Number GetScale() {
+        return mInternal->scale;
+    }
 private:
     const TPM_NAMESPACE::Blackbody* mInternal;
 };
@@ -145,10 +154,7 @@ public:
     TPM_NAMESPACE::Integer^ GetIntegerUnsafe() {
         bool ok = false;
         const TPM_NAMESPACE::Integer v = mProperty->getInteger(0, &ok);
-        if(ok)
-            return gcnew TPM_NAMESPACE::Integer{ v };
-        else
-            return nullptr;
+        return ok ? gcnew TPM_NAMESPACE::Integer{ v } : nullptr;
     }
     
     // Number
@@ -163,10 +169,7 @@ public:
     TPM_NAMESPACE::Number^ GetNumberUnsafe() {
         bool ok = false;
         const TPM_NAMESPACE::Number v = mProperty->getNumber(0, &ok);
-        if(ok)
-            return gcnew TPM_NAMESPACE::Number{ v };
-        else
-            return nullptr;
+        return ok ? gcnew TPM_NAMESPACE::Number{ v } : nullptr;
     }
     
     // Bool
@@ -181,10 +184,7 @@ public:
     bool^ GetBoolUnsafe() {
         bool ok = false;
         const bool v = mProperty->getBool(false, &ok);
-        if(ok)
-            return gcnew bool{ v };
-        else
-            return nullptr;
+        return ok ? gcnew bool{ v } : nullptr;
     }
 
     // Vector
@@ -202,10 +202,7 @@ public:
     array<TPM_NAMESPACE::Number>^ GetVectorUnsafe() {
         bool ok = false;
         const TPM_NAMESPACE::Vector v = mProperty->getVector(TPM_NAMESPACE::Vector(), &ok);
-        if(ok)
-            return gcnew array<TPM_NAMESPACE::Number>(3){ v.x, v.y, v.z };
-        else
-            return nullptr;
+        return ok ? gcnew array<TPM_NAMESPACE::Number>(3){ v.x, v.y, v.z } : nullptr;
     }
 
     // Transform
@@ -222,10 +219,7 @@ public:
     array<TPM_NAMESPACE::Number,2>^ GetTransformUnsafe() {
         bool ok = false;
         const TPM_NAMESPACE::Transform v = mProperty->getTransform(TPM_NAMESPACE::Transform::fromIdentity(), &ok);
-        if(ok)
-            return transform2array(v);
-        else
-            return nullptr;
+        return ok ? transform2array(v) : nullptr;
     }
 
     // Color
@@ -243,10 +237,7 @@ public:
     array<TPM_NAMESPACE::Number>^ GetColorUnsafe() {
         bool ok = false;
         const TPM_NAMESPACE::Color v = mProperty->getColor(TPM_NAMESPACE::Color(0,0,0), &ok);
-        if(ok)
-            return gcnew array<TPM_NAMESPACE::Number>(3){ v.r, v.g, v.b };
-        else
-            return nullptr;
+        return ok ? gcnew array<TPM_NAMESPACE::Number>(3){ v.r, v.g, v.b } : nullptr;
     }
 
     // String
@@ -264,10 +255,7 @@ public:
     String^ GetStringUnsafe() {
         bool ok = false;
         const std::string v = mProperty->getString({}, &ok);
-        if(ok)
-            return msclr::interop::marshal_as<String^>(v);
-        else
-            return nullptr;
+        return ok ? msclr::interop::marshal_as<String^>(v) : nullptr;
     }
 
     // Spectrum
@@ -281,10 +269,7 @@ public:
     Spectrum^ GetSpectrumUnsafe() {
         bool ok = false;
         const TPM_NAMESPACE::Spectrum v = mProperty->getSpectrum({}, &ok);
-        if(ok)
-            return gcnew Spectrum(new TPM_NAMESPACE::Spectrum(std::move(v)));
-        else
-            return nullptr;
+        return ok ? gcnew Spectrum(new TPM_NAMESPACE::Spectrum(std::move(v))) : nullptr;
     }
 
     // Blackbody
@@ -294,7 +279,7 @@ public:
     }
     
     Blackbody^ GetBlackbody(Blackbody^ def) {
-        TPM_NAMESPACE::Blackbody defV(def->temperature, def->scale);
+        TPM_NAMESPACE::Blackbody defV(def->Temperature, def->Scale);
         const TPM_NAMESPACE::Blackbody v = mProperty->getBlackbody(defV);
         return gcnew Blackbody(new TPM_NAMESPACE::Blackbody(std::move(v)));
     }
@@ -302,69 +287,164 @@ public:
     Blackbody^ GetBlackbodyUnsafe() {
         bool ok = false;
         const TPM_NAMESPACE::Blackbody v = mProperty->getBlackbody(TPM_NAMESPACE::Blackbody(6504, 1), &ok);
-        if(ok)
-            return gcnew Blackbody(new TPM_NAMESPACE::Blackbody(std::move(v)));
-        else
-            return nullptr;
+        return ok ? gcnew Blackbody(new TPM_NAMESPACE::Blackbody(std::move(v))) : nullptr;
     }
 
     // Animation
     // TODO
 
     // Other
-    property PropertyType type {
+    property PropertyType Type {
         PropertyType get() {
-            return PropertyType(mProperty->type());
+            return GetType();
         }
+    }
+
+    PropertyType GetType() {
+        return PropertyType(mProperty->type());
     }
 private:
     const TPM_NAMESPACE::Property* mProperty;
 };
 
+ref class PropertyIndexer;
+ref class NamedIndexer;
+ref class AnonymousIndexer;
 public ref class SceneObject {
 internal:
     SceneObject(const TPM_NAMESPACE::Object* obj) : mObject(obj) {}
 public:
-    // Properties
-    property Property^ properties[String^] {
+    property ObjectType Type {
+        ObjectType get() { return GetType(); }
+    }
+
+    property String^ PluginType {
+        String^ get() { return GetPluginType(); }
+    }
+    
+    property PropertyIndexer^ Properties {
+        PropertyIndexer^ get() { return GetProperties(); }
+    }
+
+    property NamedIndexer^ NamedChildren {
+        NamedIndexer^ get() { return GetNamedChildren(); }
+    }
+    
+    property AnonymousIndexer^ AnonymousChildren {
+        AnonymousIndexer^ get() { return GetAnonymousChildren(); }
+    }
+    
+    // ---
+    ObjectType GetType() {
+        return ObjectType(mObject->type());
+    }
+
+    String^ GetPluginType() {
+        return msclr::interop::marshal_as<String^>(mObject->pluginType());
+    }
+
+    PropertyIndexer^ GetProperties();
+    NamedIndexer^ GetNamedChildren();
+    AnonymousIndexer^ GetAnonymousChildren();
+private:
+    const TPM_NAMESPACE::Object* mObject;
+};
+
+public ref class PropertyIndexer : public IEnumerable<KeyValuePair<String^,Property^>>  {
+internal:
+    PropertyIndexer(const TPM_NAMESPACE::Object* obj) : mObject(obj) {}
+public:
+    property Property^ default[String^] {
         Property^ get(String^ key) {
             const auto prop = mObject->property(msclr::interop::marshal_as<std::string>(key));
             return prop.isValid() ? gcnew Property(new TPM_NAMESPACE::Property(std::move(prop))) : nullptr;
         }
     }
 
-    property Dictionary<String^, Property^>^ allProperties {
-        Dictionary<String^, Property^>^ get() {
-            Dictionary<String^, Property^>^ arr = gcnew Dictionary<String^, Property^>();
-            for (const auto& pair: mObject->properties()) {
-                arr->Add(msclr::interop::marshal_as<String^>(pair.first),
-                         gcnew Property(new TPM_NAMESPACE::Property(pair.second)));
-            }
-            return arr;
-        }
+    property int Length {
+        int get() { return GetLength(); }
     }
-    
-    // Named Children
-    property SceneObject^ namedChildren[String^] {
+
+    int GetLength() { return mObject->properties().size(); }
+
+    Dictionary<String^, Property^>^ ToDictionary() {
+        Dictionary<String^, Property^>^ arr = gcnew Dictionary<String^, Property^>();
+        for (const auto& pair: mObject->properties()) {
+            arr->Add(msclr::interop::marshal_as<String^>(pair.first),
+                     gcnew Property(new TPM_NAMESPACE::Property(pair.second)));
+        }
+        return arr;
+    }
+
+    static operator Dictionary<String^, Property^>^ ( PropertyIndexer val ) {
+        return val.ToDictionary();
+    }
+
+    virtual IEnumerator<KeyValuePair<String^,Property^>>^ GetEnumerator()
+    {
+        // TODO: Maybe implement own version...
+        return ToDictionary()->GetEnumerator();
+    }
+
+    virtual System::Collections::IEnumerator^ GetEnumerator2() = System::Collections::IEnumerable::GetEnumerator
+    {
+        // TODO: Maybe implement own version...
+        return ToDictionary()->GetEnumerator();
+    }
+private:
+    const TPM_NAMESPACE::Object* mObject;
+};
+
+public ref class NamedIndexer : public IEnumerable<KeyValuePair<String^,SceneObject^>> {
+internal:
+    NamedIndexer(const TPM_NAMESPACE::Object* obj) : mObject(obj) {}
+public:
+    property SceneObject^ default[String^] {
         SceneObject^ get(String^ key) {
             const auto prop = mObject->namedChild(msclr::interop::marshal_as<std::string>(key));
             return prop ? gcnew SceneObject(new TPM_NAMESPACE::Object(*prop)) : nullptr;
         }
     }
-
-    property Dictionary<String^, SceneObject^>^ allNamedChildren {
-        Dictionary<String^, SceneObject^>^ get() {
-            Dictionary<String^, SceneObject^>^ arr = gcnew Dictionary<String^, SceneObject^>();
-            for (const auto& pair: mObject->namedChildren()) {
-                arr->Add(msclr::interop::marshal_as<String^>(pair.first),
-                         gcnew SceneObject(new TPM_NAMESPACE::Object(*pair.second)));
-            }
-            return arr;
-        }
-    }
     
-    // Anonymous Children
-    property SceneObject^ anonymousChildren[int] {
+    property int Length {
+        int get() { return GetLength(); }
+    }
+
+    int GetLength() { return mObject->namedChildren().size(); }
+
+    Dictionary<String^, SceneObject^>^ ToDictionary() {
+        Dictionary<String^, SceneObject^>^ arr = gcnew Dictionary<String^, SceneObject^>();
+        for (const auto& pair: mObject->namedChildren()) {
+            arr->Add(msclr::interop::marshal_as<String^>(pair.first),
+                        gcnew SceneObject(new TPM_NAMESPACE::Object(*pair.second)));
+        }
+        return arr;
+    }
+
+    static operator Dictionary<String^, SceneObject^>^ ( NamedIndexer val ) {
+        return val.ToDictionary();
+    }
+
+    virtual IEnumerator<KeyValuePair<String^,SceneObject^>>^ GetEnumerator()
+    {
+        // TODO: Maybe implement own version...
+        return ToDictionary()->GetEnumerator();
+    }
+
+    virtual System::Collections::IEnumerator^ GetEnumerator2() = System::Collections::IEnumerable::GetEnumerator
+    {
+        // TODO: Maybe implement own version...
+        return ToDictionary()->GetEnumerator();
+    }
+private:
+    const TPM_NAMESPACE::Object* mObject;
+};
+
+public ref class AnonymousIndexer : public IEnumerable<SceneObject^> {
+internal:
+    AnonymousIndexer(const TPM_NAMESPACE::Object* obj) : mObject(obj) {}
+public:
+    property SceneObject^ default[int] {
         SceneObject^ get(int key) {
             if(key < mObject->anonymousChildren().size()) {
                 const auto prop = mObject->anonymousChildren().at(key);
@@ -376,33 +456,88 @@ public:
         }
     }
 
-    property array<SceneObject^>^ allAnonymousChildren {
-        array<SceneObject^>^ get() {
-            array<SceneObject^>^ arr = gcnew array<SceneObject^>(mObject->anonymousChildren().size());
-            int i = 0;
-            for (const auto& obj: mObject->anonymousChildren()) {
-                arr[i] = gcnew SceneObject(new TPM_NAMESPACE::Object(*obj));
-                ++i;
+    property int Length {
+        int get() { return GetLength(); }
+    }
+
+    int GetLength() { return mObject->anonymousChildren().size(); }
+
+    array<SceneObject^>^ ToArray() {
+        array<SceneObject^>^ arr = gcnew array<SceneObject^>(mObject->anonymousChildren().size());
+        int i = 0;
+        for (const auto& obj: mObject->anonymousChildren()) {
+            arr[i] = gcnew SceneObject(new TPM_NAMESPACE::Object(*obj));
+            ++i;
+        }
+        return arr;
+    }
+
+    static operator array<SceneObject^>^ ( AnonymousIndexer val ) {
+        return val.ToArray();
+    }
+
+    ref struct Enumerator : IEnumerator<SceneObject^>
+    {
+        Enumerator( AnonymousIndexer^ indexer ) : indexer(indexer), currentIndex(-1) {}
+        ~Enumerator() {}
+
+        virtual bool MoveNext() = IEnumerator<SceneObject^>::MoveNext
+        {
+            if( currentIndex < indexer->Length - 1 )
+            {
+                currentIndex++;
+                return true;
             }
-            return arr;
+            return false;
         }
+
+        property SceneObject^ Current
+        {
+            virtual SceneObject^ get() = IEnumerator<SceneObject^>::Current::get
+            {
+                return indexer->default[currentIndex];
+            }
+        };
+
+        property Object^ Current2
+        {
+            virtual Object^ get() = System::Collections::IEnumerator::Current::get
+            {
+                return indexer->default[currentIndex];
+            }
+        };
+
+        virtual void Reset() = IEnumerator<SceneObject^>::Reset {}
+
+    private:
+        AnonymousIndexer^ indexer;
+        int currentIndex;
+    };
+
+    virtual IEnumerator<SceneObject^>^ GetEnumerator()
+    {
+        return gcnew Enumerator(this);
     }
 
-    // Other
-    property ObjectType type {
-        ObjectType get() {
-            return ObjectType(mObject->type());
-        }
-    }
-
-    property String^ pluginType {
-        String^ get() {
-            return msclr::interop::marshal_as<String^>(mObject->pluginType());
-        }
+    virtual System::Collections::IEnumerator^ GetEnumerator2() = System::Collections::IEnumerable::GetEnumerator
+    {
+        return gcnew Enumerator(this);
     }
 private:
     const TPM_NAMESPACE::Object* mObject;
 };
+
+PropertyIndexer^ SceneObject::GetProperties() {
+    return gcnew PropertyIndexer(mObject);
+}
+
+NamedIndexer^ SceneObject::GetNamedChildren() {
+    return gcnew NamedIndexer(mObject);
+}
+    
+AnonymousIndexer^ SceneObject::GetAnonymousChildren() {
+    return gcnew AnonymousIndexer(mObject);
+}
 
 public ref class Scene : public SceneObject {
 internal:
@@ -412,10 +547,12 @@ public:
         delete mScene;
     }
 
-    property array<int>^ version {
-        array<int>^ get() {
-            return gcnew array<int>(3){ mScene->versionMajor(), mScene->versionMinor(), mScene->versionPatch() };
-        }
+    property array<int>^ Version {
+        array<int>^ get() { return GetVersion(); }
+    }
+
+    array<int>^ GetVersion() {
+        return gcnew array<int>(3){ mScene->versionMajor(), mScene->versionMinor(), mScene->versionPatch() };
     }
 
 private:
@@ -446,7 +583,7 @@ public:
                                msclr::interop::marshal_as<std::string>(value));
     }
 
-    property bool lowerCaseConversion {
+    property bool LowerCaseConversion {
         bool get() {
             return mInternal->isLowerCaseConversionDisabled();
         }
@@ -459,3 +596,4 @@ public:
 private:
     TPM_NAMESPACE::SceneLoader* mInternal;
 };
+}// namespace TinyParserMitsuba

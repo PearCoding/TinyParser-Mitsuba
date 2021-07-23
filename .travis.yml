@@ -149,7 +149,8 @@ before_install:
     
 env:
   global:
-    - if [ $TRAVIS_OS_NAME != "windows" ]; CXXFLAGS="-Wall -Wextra -Werror -Wpedantic"; fi
+    - if: os != windows
+      CXXFLAGS="-Wall -Wextra -Werror -Wpedantic"
 
 before_script:
   - $CXX --version

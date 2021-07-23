@@ -33,6 +33,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
 
     - os: linux
+      if: branch = master
       addons:
         apt:
           sources:
@@ -129,6 +130,9 @@ jobs:
       env:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
 
+# Windows
+    - os: windows
+
 # Macos
     - os: osx
       osx_image: xcode11.2
@@ -145,7 +149,7 @@ before_install:
     
 env:
   global:
-    - CXXFLAGS="-Wall -Wextra -Werror -Wpedantic"
+    - if [ $TRAVIS_OS_NAME != "windows" ]; CXXFLAGS="-Wall -Wextra -Werror -Wpedantic"; fi
 
 before_script:
   - $CXX --version

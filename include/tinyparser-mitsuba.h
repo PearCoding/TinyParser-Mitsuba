@@ -168,21 +168,21 @@ private:
 	std::vector<Transform> mTransforms;
 };
 
-// --------------- RGB
-struct TPM_LIB RGB {
+// --------------- Color
+struct TPM_LIB Color {
 	Number r, g, b;
-	inline RGB(Number r, Number g, Number b)
+	inline Color(Number r, Number g, Number b)
 		: r(r)
 		, g(g)
 		, b(b)
 	{
 	}
 };
-TPM_NODISCARD inline bool operator==(const RGB& a, const RGB& b)
+TPM_NODISCARD inline bool operator==(const Color& a, const Color& b)
 {
 	return a.r == b.r && a.g == b.g && a.b == b.b;
 }
-TPM_NODISCARD inline bool operator!=(const RGB& a, const RGB& b)
+TPM_NODISCARD inline bool operator!=(const Color& a, const Color& b)
 {
 	return !(a == b);
 }
@@ -343,7 +343,7 @@ public:
 		return p;
 	}
 
-	inline const RGB& getRGB(const RGB& def = RGB(0, 0, 0), bool* ok = nullptr) const
+	inline const Color& getRGB(const Color& def = Color(0, 0, 0), bool* ok = nullptr) const
 	{
 		if (mType == PT_RGB) {
 			if (ok)
@@ -355,7 +355,7 @@ public:
 			return def;
 		}
 	}
-	TPM_NODISCARD static inline Property fromRGB(const RGB& rgb)
+	TPM_NODISCARD static inline Property fromColor(const Color& rgb)
 	{
 		Property p(PT_RGB);
 		p.mRGB = rgb;
@@ -454,7 +454,7 @@ private:
 
 		Vector mVector;
 		Transform mTransform;
-		RGB mRGB;
+		Color mRGB;
 		Blackbody mBlackbody;
 	};
 	std::string mString;

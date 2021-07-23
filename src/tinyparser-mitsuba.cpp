@@ -424,13 +424,13 @@ static Property parseRGB(const ParseContext& ctx, const tinyxml2::XMLElement* el
 		if (!unpackNumber(element->Attribute("b"), ctx.Arguments, &b))
 			return Property();
 
-		return Property::fromRGB(RGB(r, g, b));
+		return Property::fromColor(Color(r, g, b));
 	} else {
 		Vector v;
 		if (!unpackVector(attrib, ctx.Arguments, &v))
 			return Property();
 
-		return Property::fromRGB(RGB(v.x, v.y, v.z));
+		return Property::fromColor(Color(v.x, v.y, v.z));
 	}
 }
 

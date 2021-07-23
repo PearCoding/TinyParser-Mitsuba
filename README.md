@@ -1,4 +1,4 @@
-# TinyParser-Mitsuba [![GitHub Tag](https://img.shields.io/github/tag/PearCoding/TinyParser-Mitsuba.svg)](https://github.com/PearCoding/TinyParser-Mitsuba/releases) [![Build Status](https://travis-ci.org/PearCoding/TinyParser-Mitsuba.svg?branch=master)](https://travis-ci.org/PearCoding/TinyParser-Mitsuba)
+# TinyParser-Mitsuba [![GitHub Tag](https://img.shields.io/github/tag/PearCoding/TinyParser-Mitsuba.svg)](https://github.com/PearCoding/TinyParser-Mitsuba/releases) [![Build Status](https://travis-ci.com/PearCoding/TinyParser-Mitsuba.svg?branch=master)](https://travis-ci.com/PearCoding/TinyParser-Mitsuba)
 
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/PearCoding/TinyParser-Mitsuba/master/LICENSE)
 [![GitHub issues](https://img.shields.io/github/issues/PearCoding/TinyParser-Mitsuba.svg)](https://github.com/PearCoding/TinyParser-Mitsuba/issues)

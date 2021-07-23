@@ -14,9 +14,15 @@ set(TPM_TARGET "${PROJECT_NAME}")
 
 get_directory_property(TPM_IS_SUBPROJECT PARENT_DIRECTORY)
 if(TPM_IS_SUBPROJECT)
-set(TPM_BUILD_EXTRA_DEFAULT OFF)
+	set(TPM_BUILD_EXTRA_DEFAULT OFF)
 else()
-set(TPM_BUILD_EXTRA_DEFAULT ON)
+	set(TPM_BUILD_EXTRA_DEFAULT ON)
+endif()
+
+if(WIN32)
+	set(TPM_BUILD_WIN32_DEFAULT OFF)
+else()
+	set(TPM_BUILD_WIN32_DEFAULT ON)
 endif()
 
 option(BUILD_SHARED_LIBS 	"Build as shared library" OFF)
@@ -25,7 +31,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	option(GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." OFF)
 endif()
 option(BUILD_DOCUMENTATION 	"Build documentation with doxygen." ${TPM_BUILD_EXTRA_DEFAULT})
-option(BUILD_CLI_WRAPPER 	"Build wrapper for C++/CLI to be used with C# or other frameworks" ${TPM_BUILD_EXTRA_DEFAULT})
+option(BUILD_CLI_WRAPPER 	"Build wrapper for C++/CLI to be used with C# or other frameworks" ${TPM_BUILD_WIN32_DEFAULT})
 option(BUILD_DUMP_UTILITY 	"Build utility tool to dump parsable files." ${TPM_BUILD_EXTRA_DEFAULT})
 
 #SETS

@@ -158,7 +158,7 @@ before_script:
 script:
   - cmake --build .
 after_success:
-  - ctest -c Debug --output-on-failure
+  - ctest -C Debug --output-on-failure
   - if [ $USE_COVERAGE == ON ]; then make coveralls; fi
 notifications:
   email: false

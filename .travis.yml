@@ -180,10 +180,10 @@ jobs:
         - cd src/wrapper/csharp
         - dotnet restore
       script:
-        - dotnet build
-        - dotnet pack
+        - dotnet build -c Release
+        - dotnet pack -c Release -o ./
       after_success: 
-        - dotnet nuget push FAIL --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        - dotnet nuget push "*.nupkg" --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --no-symbols
 
 before_install:
   - eval "${MATRIX_EVAL}"

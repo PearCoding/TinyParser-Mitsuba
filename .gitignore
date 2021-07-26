@@ -45,3 +45,6 @@ obj
 launchSettings.json
 .idea
 SeeSharp.sln.DotSettings.user
+
+# Deployment output
+*.nupkg

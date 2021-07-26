@@ -2,7 +2,8 @@ language: cpp
 jobs:
   include:
 #Linux
-    - os: linux
+    - stage: Build
+      os: linux
       addons:
         apt:
           sources:
@@ -56,6 +57,8 @@ jobs:
       workspaces:
         create:
           name: linux-binaries
+          paths:
+            - out/
 
     - os: linux
       dist: bionic
@@ -140,6 +143,8 @@ jobs:
       workspaces:
         create:
           name: windows-binaries
+          paths:
+            - out/
 
 # Macos
     - os: osx
@@ -149,6 +154,8 @@ jobs:
       workspaces:
         create:
           name: osx-binaries
+          paths:
+            - out/
 
     - os: osx
       osx_image: xcode10.1
@@ -158,14 +165,18 @@ jobs:
 
 # Deploy stage
     - stage: Deployment
+      language: csharp
+      mono: none
       os: windows # We use Windows to easier make use of the dotnet environment for nuget
       workspaces:
         use:
           - linux-binaries
           - windows-binaries
           - osx-binaries
+      before_script: skip
       script:
         - echo "TEST"
+      after_success: skip
 
 before_install:
   - eval "${MATRIX_EVAL}"
@@ -177,11 +188,12 @@ before_script:
   - cd build
   - if [ $USE_COVERAGE == ON ]; then lcov --directory . --zerocounters; fi
   - if [[ $TRAVIS_OS_NAME != "windows" ]]; then export CXXFLAGS="-Wall -Wextra -Werror -Wpedantic"; fi
-  - cmake -DCMAKE_BUILD_TYPE=Debug  ..
+  - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="${TRAVIS_BUILD_DIR}/out/${TRAVIS_OS_NAME}" ..
 script:
-  - cmake --build .
+  - cmake --build . 
 after_success:
   - ctest -C Debug --output-on-failure
   - if [ $USE_COVERAGE == ON ]; then make coveralls; fi
+  - if [ $USE_WS == ON]; then cmake --install . ; fi
 notifications:
   email: false

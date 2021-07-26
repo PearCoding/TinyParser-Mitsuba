@@ -1,7 +1,7 @@
 #ifndef TINYPARSER_MITSUBA_C_H_
 #define TINYPARSER_MITSUBA_C_H_
 
-#include <stddef.h>
+#include <stdint.h>
 
 #ifdef _WIN32
 #ifdef TPM_C_EXPORT

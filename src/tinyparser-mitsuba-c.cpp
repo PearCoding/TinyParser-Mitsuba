@@ -3,6 +3,7 @@
 // Actual implementation
 #include "tinyparser-mitsuba.h"
 #include <cassert>
+#include <cstring>
 
 // Utility
 enum tpm_handle_type {
@@ -315,12 +316,10 @@ tpm_object_handle tpm_get_anonymous_child(tpm_object_handle handle, size_t id)
 			const auto child = ptr->anonymousChildren()[id];
 			if (child)
 				return _pack_object(child.get(), false);
-			else
-				return nullptr;
 		}
-	} else {
-		return nullptr;
 	}
+
+	return nullptr;
 }
 size_t tpm_get_anonymous_child_count(tpm_object_handle handle)
 {

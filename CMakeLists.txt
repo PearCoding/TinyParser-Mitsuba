@@ -19,19 +19,12 @@ else()
 	set(TPM_BUILD_EXTRA_DEFAULT ON)
 endif()
 
-if(WIN32)
-	set(TPM_BUILD_WIN32_DEFAULT ON)
-else()
-	set(TPM_BUILD_WIN32_DEFAULT OFF)
-endif()
-
 option(BUILD_SHARED_LIBS 	"Build as shared library" OFF)
 option(BUILD_TESTING 		"Build the testing tree" ${TPM_BUILD_EXTRA_DEFAULT})
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	option(GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." OFF)
 endif()
 option(BUILD_DOCUMENTATION 	"Build documentation with doxygen." ${TPM_BUILD_EXTRA_DEFAULT})
-option(BUILD_CLI_WRAPPER 	"Build wrapper for C++/CLI to be used with C# or other frameworks" ${TPM_BUILD_WIN32_DEFAULT})
 option(BUILD_DUMP_UTILITY 	"Build utility tool to dump parsable files." ${TPM_BUILD_EXTRA_DEFAULT})
 
 #SETS
@@ -90,39 +83,24 @@ if(GENERATE_COVERAGE AND (CMAKE_BUILD_TYPE MATCHES Debug))
 	include(cmake/Coverage.cmake)
 endif()
 
-# Wrapper
-if(BUILD_CLI_WRAPPER)
-	set(WRAPPER_CLI_FILES
-		src/wrapper/cli/wrapper.cpp
-		src/wrapper/cli/wrapper.h)
-	add_library(${TPM_TARGET}_cli SHARED ${WRAPPER_CLI_FILES}) 
-	target_include_directories(${TPM_TARGET}_cli
-		PUBLIC 
-			$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-			$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-	target_link_libraries(${TPM_TARGET}_cli PRIVATE ${TPM_TARGET})
-	target_compile_features(${TPM_TARGET}_cli PUBLIC cxx_std_11)
-	set_target_properties(${TPM_TARGET}_cli PROPERTIES
-		VERSION "${TPM_LIB_VERSION}"
-		SOVERSION "${TPM_LIB_SOVERSION}"
-		COMMON_LANGUAGE_RUNTIME ""
-		VS_GLOBAL_ROOTNAMESPACE "TinyParserMitsuba"
-		DOTNET_TARGET_FRAMEWORK "netcoreapp3.1"
-	)
-	set_property(TARGET ${TPM_TARGET}_cli PROPERTY VS_DOTNET_REFERENCES
-		"System"
-		"System.Core")
-	# The following is only used on Windows as VS integration with generator Ninja (not generator VS!) does not push the /cli command
-	if(CMAKE_GENERATOR MATCHES "Visual Studio")
-		set(IS_VC ON)
-	endif()
-	if(MSVC AND NOT IS_VC)
-		target_compile_options(${TPM_TARGET}_cli PRIVATE /clr)
-		target_compile_options(${TPM_TARGET}_cli PRIVATE /fp:precise)
-		string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-		string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-	endif()
-endif()
+# C-Wrapper
+set(WRAPPER_C_FILES
+	src/tinyparser-mitsuba-c.cpp
+	include/tinyparser-mitsuba-c.h)
+add_library(${TPM_TARGET}_c SHARED ${WRAPPER_C_FILES}) 
+target_include_directories(${TPM_TARGET}_c
+PUBLIC 
+	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+target_link_libraries(${TPM_TARGET}_c PRIVATE ${TPM_TARGET})
+set_target_properties(${TPM_TARGET}_c PROPERTIES
+	VERSION "${TPM_LIB_VERSION}"
+	SOVERSION "${TPM_LIB_SOVERSION}"
+	CXX_VISIBILITY_PRESET hidden
+	POSITION_INDEPENDENT_CODE ON)
+
+target_compile_definitions(${TPM_TARGET}_c PUBLIC $<$<CONFIG:Debug>:TPM_DEBUG> PRIVATE "TPM_C_EXPORT")
 
 # Documentation
 if(BUILD_DOCUMENTATION)

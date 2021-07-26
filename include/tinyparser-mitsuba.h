@@ -116,6 +116,12 @@ struct TPM_LIB Transform {
 	using Array = std::array<Number, 4 * 4>;
 	Array matrix; // Row major
 
+	Transform()					= default;
+	Transform(const Transform&) = default;
+	Transform& operator=(const Transform&) = default;
+	Transform(Transform&&)				   = default;
+	Transform& operator=(Transform&&) = default;
+
 	inline explicit Transform(const Array& arr)
 		: matrix(arr)
 	{
@@ -142,8 +148,6 @@ struct TPM_LIB Transform {
 	static Transform fromLookAt(const Vector& origin, const Vector& target, const Vector& up);
 
 private:
-	inline Transform() = default;
-
 	Transform multiplyFromRight(const Transform& other) const;
 };
 

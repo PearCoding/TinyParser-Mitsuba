@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Title>TinyParser - Mitsuba</Title>
+    <Description>A simple C# wrapper for TinyParser - Mitsuba, allowing to parse scene files generated for the Mitsuba renderer.</Description>
+    <PackageId>TinyParserMitsuba</PackageId>
+    <Version>0.1.0</Version>
+    <Copyright>(c) Ömercan Yazici</Copyright>
+    <RepositoryUrl>https://github.com/PearCoding/TinyParser-Mitsuba</RepositoryUrl>
+
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Authors>Ömercan Yazici</Authors>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <IsPackable>true</IsPackable>
+    <PackageTags>parser wrapper mitsuba renderer tiny</PackageTags>
+
+    <TargetFramework>net5.0</TargetFramework>
+    
+    <!-- Each additional platform requires an entry here, once the native binaries have been added below -->
+    <RuntimeIdentifiers>win10-x64;linux-x64;osx-x64</RuntimeIdentifiers>
+
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Each additional platform requires an entry here, to copy the corresponding native binaries -->
+  <!-- Windows -->
+  <ItemGroup>
+    <Content CopyToOutputDirectory="PreserveNewest"
+      Include="../../../out/tinyparser_mitsuba_c.dll"
+      Pack="true"
+      PackagePath="runtimes/win-x64/native/"
+      Condition="Exists('../../../out/tinyparser_mitsuba_c.dll')"/>
+  </ItemGroup>
+
+  <!-- Linux -->
+  <ItemGroup>
+    <Content CopyToOutputDirectory="PreserveNewest"
+      Include="../../../out/libtinyparser_mitsuba_c.so"
+      Pack="true"
+      PackagePath="runtimes/linux-x64/native/"
+      Condition="Exists('../../../out/libtinyparser_mitsuba_c.so')"/>
+  </ItemGroup>
+
+  <!-- Mac OS X -->
+  <ItemGroup>
+    <Content CopyToOutputDirectory="PreserveNewest"
+      Include="../../../out/libtinyparser_mitsuba_c.dylib"
+      Pack="true"
+      PackagePath="runtimes/osx-x64/native/"
+      Condition="Exists('../../../out/libtinyparser_mitsuba_c.dylib')"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../../LICENSE" Pack="true" PackagePath=""/>
+    <None Include="../../../README.md" Pack="true" PackagePath=""/>
+  </ItemGroup>
+</Project>

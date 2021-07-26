@@ -36,6 +36,12 @@ build*
 res
 .vscode
 
-/.vs
+.vs
 /CMakeSettings.json
 /out
+bin
+obj
+
+launchSettings.json
+.idea
+SeeSharp.sln.DotSettings.user

@@ -182,7 +182,8 @@ jobs:
       script:
         - dotnet build
         - dotnet pack
-      after_success: skip # TODO
+      after_success: 
+        - dotnet nuget push FAIL --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
 
 before_install:
   - eval "${MATRIX_EVAL}"

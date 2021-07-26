@@ -52,7 +52,10 @@ jobs:
           packages:
             - g++-9
       env:
-        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9 && USE_WS=ON && WORKSPACE=linux-binaries"
+      workspaces:
+        create:
+          name: linux-binaries
 
     - os: linux
       dist: bionic
@@ -132,10 +135,20 @@ jobs:
 
 # Windows
     - os: windows
+      env:
+        - MATRIX_EVAL="USE_WS=ON && WORKSPACE=windows-binaries"
+      workspaces:
+        create:
+          name: windows-binaries
 
 # Macos
     - os: osx
       osx_image: xcode11.2
+      env:
+        - MATRIX_EVAL="USE_WS=ON && WORKSPACE=osx-binaries"
+      workspaces:
+        create:
+          name: osx-binaries
 
     - os: osx
       osx_image: xcode10.1
@@ -143,9 +156,19 @@ jobs:
     - os: osx
       osx_image: xcode9.4
 
+# Deploy stage
+    - stage: Deployment
+      os: windows # We use Windows to easier make use of the dotnet environment for nuget
+      workspaces:
+        use:
+          - linux-binaries
+          - windows-binaries
+          - osx-binaries
+      script:
+        - echo "TEST"
 
 before_install:
-    - eval "${MATRIX_EVAL}"
+  - eval "${MATRIX_EVAL}"
 
 before_script:
   - $CXX --version

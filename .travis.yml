@@ -167,16 +167,20 @@ jobs:
     - stage: Deployment
       language: csharp
       mono: none
+      dotnet: 3.1
       os: windows # We use Windows to easier make use of the dotnet environment for nuget
       workspaces:
         use:
           - linux-binaries
           - windows-binaries
           - osx-binaries
-      before_script: skip
+      before_script:
+        - cd src/wrapper/csharp
+        - dotnet restore
       script:
-        - echo "TEST"
-      after_success: skip
+        - dotnet build
+        - dotnet pack
+      after_success: skip # TODO
 
 before_install:
   - eval "${MATRIX_EVAL}"
@@ -186,14 +190,14 @@ before_script:
   - cmake --version
   - mkdir build
   - cd build
-  - if [ $USE_COVERAGE == ON ]; then lcov --directory . --zerocounters; fi
+  - if [[ -z $USE_COVERAGE ]]; then lcov --directory . --zerocounters; fi
   - if [[ $TRAVIS_OS_NAME != "windows" ]]; then export CXXFLAGS="-Wall -Wextra -Werror -Wpedantic"; fi
   - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="${TRAVIS_BUILD_DIR}/out/${TRAVIS_OS_NAME}" ..
 script:
   - cmake --build . 
 after_success:
   - ctest -C Debug --output-on-failure
-  - if [ $USE_COVERAGE == ON ]; then make coveralls; fi
-  - if [ $USE_WS == ON]; then cmake --install . ; fi
+  - if [[ -z $USE_COVERAGE ]]; then make coveralls; fi
+  - if [[ -z $USE_WS ]]; then cmake --install . ; fi
 notifications:
   email: false

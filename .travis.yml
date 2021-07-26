@@ -199,7 +199,7 @@ before_script:
 script:
   - cmake --build . --config Release
   - ctest -C Release --output-on-failure 
-  - if [[ $USE_WS ]]; then cmake --install . --config Release ; fi
+  - if [[ $USE_WS ]]; then cmake --install . ; fi
 after_success:
   - if [[ $USE_COVERAGE ]]; then make coveralls; fi
 notifications:

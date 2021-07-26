@@ -27,28 +27,28 @@
   <!-- Windows -->
   <ItemGroup>
     <Content CopyToOutputDirectory="PreserveNewest"
-      Include="../../../out/tinyparser_mitsuba_c.dll"
+      Include="../../../out/bin/tinyparser_mitsuba_c.dll"
       Pack="true"
       PackagePath="runtimes/win-x64/native/"
-      Condition="Exists('../../../out/tinyparser_mitsuba_c.dll')"/>
+      Condition="Exists('../../../out/bin/tinyparser_mitsuba_c.dll')"/>
   </ItemGroup>
 
   <!-- Linux -->
   <ItemGroup>
     <Content CopyToOutputDirectory="PreserveNewest"
-      Include="../../../out/libtinyparser_mitsuba_c.so"
+      Include="../../../out/bin/libtinyparser_mitsuba_c.so"
       Pack="true"
       PackagePath="runtimes/linux-x64/native/"
-      Condition="Exists('../../../out/libtinyparser_mitsuba_c.so')"/>
+      Condition="Exists('../../../out/bin/libtinyparser_mitsuba_c.so')"/>
   </ItemGroup>
 
   <!-- Mac OS X -->
   <ItemGroup>
     <Content CopyToOutputDirectory="PreserveNewest"
-      Include="../../../out/libtinyparser_mitsuba_c.dylib"
+      Include="../../../out/bin/libtinyparser_mitsuba_c.dylib"
       Pack="true"
       PackagePath="runtimes/osx-x64/native/"
-      Condition="Exists('../../../out/libtinyparser_mitsuba_c.dylib')"/>
+      Condition="Exists('../../../out/bin/libtinyparser_mitsuba_c.dylib')"/>
   </ItemGroup>
 
   <ItemGroup>

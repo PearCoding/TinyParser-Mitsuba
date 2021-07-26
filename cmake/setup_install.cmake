@@ -1,6 +1,6 @@
 include(GNUInstallDirs)
 
-install(TARGETS ${TPM_TARGET}
+install(TARGETS ${TPM_TARGET} ${TPM_TARGET}_c
         EXPORT ${TPM_TARGET}Targets
         RUNTIME 
                 DESTINATION ${CMAKE_INSTALL_BINDIR}

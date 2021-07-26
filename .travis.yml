@@ -198,10 +198,10 @@ before_script:
   - if [[ $TRAVIS_OS_NAME != "windows" ]]; then export CXXFLAGS="-Wall -Wextra -Werror -Wpedantic"; fi
   - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${TRAVIS_BUILD_DIR}/build/out/${TRAVIS_OS_NAME}" ..
 script:
-  - cmake --build . 
-after_success:
-  - ctest -C Release --output-on-failure
-  - if [[ $USE_COVERAGE ]]; then make coveralls; fi
+  - cmake --build .
+  - ctest -C Release --output-on-failure 
   - if [[ $USE_WS ]]; then cmake --install . ; fi
+after_success:
+  - if [[ $USE_COVERAGE ]]; then make coveralls; fi
 notifications:
   email: false

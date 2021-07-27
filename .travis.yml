@@ -183,6 +183,8 @@ jobs:
         - cd src/wrapper/csharp
       script:
         - dotnet restore
+        - dotnet build -c Release
+        - ls ../../../build/out
         - dotnet pack -c Release -o ./
       after_success:
         - 7z l *.nupkg 

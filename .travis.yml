@@ -60,7 +60,7 @@ jobs:
         create:
           name: linux-binaries
           paths:
-            - out/
+            - out/libtinyparser_mitsuba_c.*
 
     #- os: linux
     #  dist: bionic
@@ -146,7 +146,7 @@ jobs:
         create:
           name: windows-binaries
           paths:
-            - out/
+            - out/tinyparser_mitsuba_c.*
 
 # Macos
     - os: osx
@@ -157,7 +157,7 @@ jobs:
         create:
           name: osx-binaries
           paths:
-            - out/
+            - out/libtinyparser_mitsuba_c.*
 
     #- os: osx
     #  osx_image: xcode10.1

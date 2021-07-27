@@ -185,7 +185,7 @@ jobs:
         - dotnet restore
         - dotnet pack -c Release -o ./
       after_success:
-        - 7z l *.nupkg
+        - 7z l *.nupkg 
         #- dotnet nuget push "*.nupkg" --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
 
 before_install:
@@ -203,6 +203,7 @@ script:
   - cmake --build . --config Release
   - ctest -C Release --output-on-failure
 after_success:
+  - ls out/
   - if [[ $USE_COVERAGE ]]; then make coveralls; fi
 notifications:
   email: false

@@ -90,16 +90,16 @@ jobs:
 
     - name: Pack
       run: |
-        cd src/wrapper/csharp
+        cd csharp
         dotnet pack -c Release
 
     - name: Upload .nupkg
       uses: actions/upload-artifact@v2
       with:
-        path: ${{github.workspace}}/src/wrapper/csharp/bin/**/*.nupkg
+        path: ${{github.workspace}}/csharp/TinyParserMitsuba/bin/**/*.nupkg
 
     - name: Publish on version change
       uses: rohith/publish-nuget@v2
       with:
-        PROJECT_FILE_PATH: src/wrapper/csharp/TinyParserMitsuba.csproj
+        PROJECT_FILE_PATH: csharp/TinyParserMitsuba/TinyParserMitsuba.csproj
         NUGET_KEY: ${{secrets.NUGET_API_KEY}}

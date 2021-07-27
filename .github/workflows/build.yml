@@ -96,7 +96,7 @@ jobs:
     - name: Upload .nupkg
       uses: actions/upload-artifact@v2
       with:
-        path: ${{github.workspace}}/src/wrapper/csharp/TinyParserMitsuba/bin/**/*.nupkg
+        path: ${{github.workspace}}/src/wrapper/csharp/bin/**/*.nupkg
 
     - name: Publish on version change
       uses: rohith/publish-nuget@v2

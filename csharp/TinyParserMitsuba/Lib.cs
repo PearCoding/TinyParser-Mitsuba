@@ -2,15 +2,19 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
+#pragma warning disable IDE1006 // Naming convention might be weird here, but thats on purpose
 namespace TinyParserMitsuba
 {
-    using tpm_object_handle = System.IntPtr;
+    #region Types
+    using tpm_object_handle = IntPtr;
     using tpm_property_handle = IntPtr;
     using tpm_spectrum_handle = IntPtr;
     using tpm_size = UInt64;
     using tpm_int64 = Int64;
     using tpm_bool = Byte;
+    #endregion
 
+    #region Structures
     internal enum tpm_object_type
     {
         TPM_OT_ERROR = -1,
@@ -54,7 +58,7 @@ namespace TinyParserMitsuba
         [MarshalAs(UnmanagedType.ByValArray)]
         public string[] argument_keys;
         [MarshalAs(UnmanagedType.ByValArray)]
-        public string argument_values;
+        public string[] argument_values;
         public tpm_size argument_counts;
         public tpm_bool disable_lowercase_conversion;
     }
@@ -88,6 +92,7 @@ namespace TinyParserMitsuba
         public double temperature;
         public double scale;
     }
+    #endregion
 
     internal static class Lib
     {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TinyParserMitsuba
 {
@@ -12,11 +13,32 @@ namespace TinyParserMitsuba
             _DisableLowerCaseConversion = false;
         }
 
-        public Scene? LoadFromFile(string path)
+        private tpm_load_options GetOptions()
         {
             tpm_load_options options = new();
-            // TODO
+            options.argument_counts = (ulong)_Arguments.Count;
+            options.argument_keys = _Arguments.Count == 0 ? null : new string[_Arguments.Count];
+            options.argument_values = _Arguments.Count == 0 ? null : new string[_Arguments.Count];
+            foreach (var x in _Arguments.Select((Entry, Index) => new { Entry, Index }))
+            {
+                options.argument_keys[x.Index] = x.Entry.Key;
+                options.argument_values[x.Index] = x.Entry.Value;
+            }
+
+            options.lookup_dirs_count = (ulong)_LookupPaths.Count;
+            options.lookup_dirs = _LookupPaths.Count == 0 ? null : new string[_LookupPaths.Count];
+            for (int i = 0; i < _LookupPaths.Count; ++i)
+            {
+                options.lookup_dirs[i] = _LookupPaths[i];
+            }
+
             options.disable_lowercase_conversion = (byte)(_DisableLowerCaseConversion ? 1 : 0);
+            return options;
+        }
+
+        public Scene? LoadFromFile(string path)
+        {
+            var options = GetOptions();
             var scene_handle = Lib.tpm_load_file2(path, ref options);
             if (scene_handle == IntPtr.Zero)
                 return null;
@@ -26,9 +48,7 @@ namespace TinyParserMitsuba
 
         public Scene? LoadFromString(string str)
         {
-            tpm_load_options options = new();
-            // TODO
-            options.disable_lowercase_conversion = (byte)(_DisableLowerCaseConversion ? 1 : 0);
+            var options = GetOptions();
             var scene_handle = Lib.tpm_load_string2(str, ref options);
             if (scene_handle == IntPtr.Zero)
                 return null;
@@ -36,12 +56,12 @@ namespace TinyParserMitsuba
                 return new Scene(scene_handle);
         }
 
-        void AddLookupDir(string path)
+        public void AddLookupDir(string path)
         {
             _LookupPaths.Add(path);
         }
 
-        void AddArgument(string key, string value)
+        public void AddArgument(string key, string value)
         {
             _Arguments.Add(key, value);
         }

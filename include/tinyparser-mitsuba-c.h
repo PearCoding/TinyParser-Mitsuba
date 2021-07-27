@@ -18,6 +18,10 @@
 #define TPM_C_LIB
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef char tpm_bool;
 #define TPM_TRUE (1)
 #define TPM_FALSE (0)
@@ -157,4 +161,7 @@ TPM_C_LIB double tpm_spectrum_get_wavelength(tpm_spectrum_handle handle, size_t 
 TPM_C_LIB double tpm_spectrum_get_weight(tpm_spectrum_handle handle, size_t index);
 
 /* TODO: Animation */
+#ifdef __cplusplus
+}
+#endif
 #endif /*TINYPARSER_MITSUBA_C_H_*/

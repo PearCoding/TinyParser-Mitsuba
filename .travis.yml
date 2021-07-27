@@ -181,7 +181,8 @@ jobs:
         - ls -R -a
         - dotnet restore
         - dotnet pack -c Release -o ./
-      after_success: skip
+      after_success:
+        - 7z l *.nupkg
         #- dotnet nuget push "*.nupkg" --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
 
 before_install:

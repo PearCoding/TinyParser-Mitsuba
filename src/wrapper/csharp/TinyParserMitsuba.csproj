@@ -36,19 +36,19 @@
   <!-- Linux -->
   <ItemGroup>
     <Content CopyToOutputDirectory="PreserveNewest"
-      Include="../../../build/out/libtinyparser_mitsuba_c.so*"
+      Include="../../../build/out/libtinyparser_mitsuba_c.so"
       Pack="true"
       PackagePath="runtimes/linux-x64/native/"
-      Condition="Exists('../../../build/out/libtinyparser_mitsuba_c.so*')"/>
+      Condition="Exists('../../../build/out/libtinyparser_mitsuba_c.so')"/>
   </ItemGroup>
 
   <!-- Mac OS X -->
   <ItemGroup>
     <Content CopyToOutputDirectory="PreserveNewest"
-      Include="../../../build/out/libtinyparser_mitsuba_c*.dylib"
+      Include="../../../build/out/libtinyparser_mitsuba_c.dylib"
       Pack="true"
       PackagePath="runtimes/osx-x64/native/"
-      Condition="Exists('../../../build/out/libtinyparser_mitsuba_c*.dylib')"/>
+      Condition="Exists('../../../build/out/libtinyparser_mitsuba_c.dylib')"/>
   </ItemGroup>
 
   <ItemGroup>

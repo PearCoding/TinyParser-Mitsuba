@@ -4,7 +4,7 @@
     <Title>TinyParser - Mitsuba</Title>
     <Description>A simple C# wrapper for TinyParser - Mitsuba, allowing to parse scene files generated for the Mitsuba renderer.</Description>
     <PackageId>TinyParserMitsuba</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Copyright>(c) Ömercan Yazici</Copyright>
     <RepositoryUrl>https://github.com/PearCoding/TinyParser-Mitsuba</RepositoryUrl>
 

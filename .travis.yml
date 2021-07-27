@@ -170,6 +170,10 @@ jobs:
       language: csharp
       mono: none
       dotnet: 5.0
+      addons:
+        apt:
+          packages:
+            - p7zip-full
       workspaces:
         use:
           - linux-binaries
@@ -178,7 +182,6 @@ jobs:
       before_script:
         - cd src/wrapper/csharp
       script:
-        - ls -R -a
         - dotnet restore
         - dotnet pack -c Release -o ./
       after_success:
@@ -198,8 +201,7 @@ before_script:
   - cmake -DCMAKE_BUILD_TYPE=Release ..
 script:
   - cmake --build . --config Release
-  - ctest -C Release --output-on-failure 
-  - ls -R -a
+  - ctest -C Release --output-on-failure
 after_success:
   - if [[ $USE_COVERAGE ]]; then make coveralls; fi
 notifications:

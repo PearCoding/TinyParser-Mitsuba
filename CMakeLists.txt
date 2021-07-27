@@ -101,6 +101,9 @@ set_target_properties(${TPM_TARGET}_c PROPERTIES
 	POSITION_INDEPENDENT_CODE ON)
 
 target_compile_definitions(${TPM_TARGET}_c PUBLIC $<$<CONFIG:Debug>:TPM_DEBUG> PRIVATE "TPM_C_EXPORT")
+add_custom_command(TARGET ${TPM_TARGET}_c POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/out/
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TPM_TARGET}_c> ${CMAKE_CURRENT_BINARY_DIR}/out/ )
 
 # Documentation
 if(BUILD_DOCUMENTATION)

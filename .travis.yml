@@ -149,15 +149,15 @@ jobs:
             - out/
 
 # Macos
-    #- os: osx
-    #  osx_image: xcode11.2
-    #  env:
-    #    - USE_WS="ON"
-    #  workspaces:
-    #    create:
-    #      name: osx-binaries
-    #      paths:
-    #        - out/
+    - os: osx
+      osx_image: xcode11.2
+      env:
+        - USE_WS="ON"
+      workspaces:
+        create:
+          name: osx-binaries
+          paths:
+            - out/
 
     #- os: osx
     #  osx_image: xcode10.1
@@ -240,7 +240,7 @@ jobs:
         - dotnet restore
         - dotnet pack -c Release -o ./
       after_success: skip
-        #- dotnet nuget push "*.nupkg" --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        #- dotnet nuget push "*.nupkg" --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
 
 before_install:
   - eval "${MATRIX_EVAL}"
@@ -252,11 +252,10 @@ before_script:
   - cd build
   - if [[ $USE_COVERAGE ]]; then lcov --directory . --zerocounters; fi
   - if [[ $TRAVIS_OS_NAME != "windows" ]]; then export CXXFLAGS="-Wall -Wextra -Werror -Wpedantic"; fi
-  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${TRAVIS_BUILD_DIR}/build/out/${TRAVIS_OS_NAME}" ..
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
 script:
   - cmake --build . --config Release
   - ctest -C Release --output-on-failure 
-  - if [[ $USE_WS ]]; then cmake --install . ; fi
   - ls -R -a
 after_success:
   - if [[ $USE_COVERAGE ]]; then make coveralls; fi

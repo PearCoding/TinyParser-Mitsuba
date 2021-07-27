@@ -2,7 +2,7 @@ language: cpp
 jobs:
   include:
 #Linux
-    - stage: C++ Build
+    - stage: Build
       os: linux
       addons:
         apt:
@@ -164,61 +164,6 @@ jobs:
     
     #- os: osx
     #  osx_image: xcode9.4
-
-    - stage: C# Build
-      os: linux
-      language: csharp
-      mono: none
-      dotnet: 5.0
-      workspaces:
-        create:
-          name: linux-binaries2
-          paths:
-            - out/
-      before_script:
-        - cd src/wrapper/csharp
-      script:
-        - dotnet build -c Release
-        - mkdir -p out/lib
-        - cmake -E copy_directory bin/Release out/lib/
-        - ls -R -a
-    - os: windows
-      language: csharp
-      mono: none
-      workspaces:
-        create:
-          name: windows-binaries2
-          paths:
-            - out/
-      before_script:
-        - choco install dotnet-sdk
-        - cd src/wrapper/csharp
-        - dotnet --version
-      script:
-        - dotnet build -c Release
-        - mkdir -p out/lib
-        - cmake -E copy_directory bin/Release out/lib/
-        - ls -R -a
-    - os: osx
-      osx_image: xcode11.2
-      language: minimal
-      addons:
-        homebrew:
-          casks:
-            - https://raw.githubusercontent.com/Homebrew/homebrew-cask/87ccda2461e43032d0972f39c35ec36bb0656cf9/Casks/dotnet-sdk.rb
-      workspaces:
-        create:
-          name: osx-binaries2
-          paths:
-            - out/
-      before_script:
-        - export DOTNET_ROOT="$(brew --prefix)/opt/dotnet/libexec"
-        - cd src/wrapper/csharp
-      script:
-        - dotnet build -c Release
-        - mkdir -p out/lib
-        - cmake -E copy_directory bin/Release out/lib/
-        - ls -R -a
 # Deploy stage
     - stage: Deployment
       os: linux
@@ -229,10 +174,7 @@ jobs:
         use:
           - linux-binaries
           - windows-binaries
-          #- osx-binaries
-          - linux-binaries2
-          #- windows-binaries2
-          - osx-binaries2
+          - osx-binaries 
       before_script:
         - cd src/wrapper/csharp
       script:

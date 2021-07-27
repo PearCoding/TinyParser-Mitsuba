@@ -177,7 +177,6 @@ jobs:
             - out/
       before_script:
         - cd src/wrapper/csharp
-        - dotnet restore
       script:
         - dotnet build -c Release
         - mkdir -p out/lib
@@ -195,7 +194,6 @@ jobs:
         - choco install dotnet-sdk
         - cd src/wrapper/csharp
         - dotnet --version
-        - dotnet restore
       script:
         - dotnet build -c Release
         - mkdir -p out/lib
@@ -205,17 +203,16 @@ jobs:
       osx_image: xcode11.2
       language: minimal
       addons:
-        homebrew:
-          casks:
-            - dotnet-sdk
+        homebrew: 
+          - dotnet-sdk@5.0
       workspaces:
         create:
           name: osx-binaries2
           paths:
             - out/
       before_script:
+        - export DOTNET_ROOT="$(brew --prefix)/opt/dotnet/libexec"
         - cd src/wrapper/csharp
-        - dotnet restore
       script:
         - dotnet build -c Release
         - mkdir -p out/lib
@@ -237,9 +234,9 @@ jobs:
           - osx-binaries2
       before_script:
         - cd src/wrapper/csharp
-        - dotnet restore
       script:
         - ls -R -a
+        - dotnet restore
         - dotnet pack -c Release -o ./
       after_success: skip
         #- dotnet nuget push "*.nupkg" --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json

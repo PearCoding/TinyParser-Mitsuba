@@ -186,14 +186,15 @@ jobs:
     - os: windows
       language: csharp
       mono: none
-      dotnet: 5.0
       workspaces:
         create:
           name: windows-binaries2
           paths:
             - out/
       before_script:
+        - choco install dotnet-sdk
         - cd src/wrapper/csharp
+        - dotnet --version
         - dotnet restore
       script:
         - dotnet build -c Release

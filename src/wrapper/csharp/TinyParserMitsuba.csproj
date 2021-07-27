@@ -17,7 +17,7 @@
     <TargetFramework>net5.0</TargetFramework>
     
     <!-- Each additional platform requires an entry here, once the native binaries have been added below -->
-    <RuntimeIdentifiers>win10-x64;linux-x64;osx-x64</RuntimeIdentifiers>
+    <!-- <RuntimeIdentifiers>win10-x64;linux-x64;osx-x64</RuntimeIdentifiers>-->
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

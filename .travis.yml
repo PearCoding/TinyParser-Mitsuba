@@ -203,8 +203,9 @@ jobs:
       osx_image: xcode11.2
       language: minimal
       addons:
-        homebrew: 
-          - dotnet-sdk
+        homebrew:
+          casks:
+            - https://raw.githubusercontent.com/Homebrew/homebrew-cask/87ccda2461e43032d0972f39c35ec36bb0656cf9/Casks/dotnet-sdk.rb
       workspaces:
         create:
           name: osx-binaries2

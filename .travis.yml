@@ -178,7 +178,7 @@ jobs:
       before_script:
         - cd src/wrapper/csharp
       script:
-        - dotnet build -c Release
+        - dotnet build -c Release --runtime linux-x64
         - mkdir -p out/lib
         - cmake -E copy_directory bin/Release out/lib/
         - ls -R -a
@@ -195,7 +195,7 @@ jobs:
         - cd src/wrapper/csharp
         - dotnet --version
       script:
-        - dotnet build -c Release
+        - dotnet build -c Release --runtime win10-x64
         - mkdir -p out/lib
         - cmake -E copy_directory bin/Release out/lib/
         - ls -R -a
@@ -204,7 +204,7 @@ jobs:
       language: minimal
       addons:
         homebrew: 
-          - dotnet-sdk@5.0
+          - dotnet-sdk
       workspaces:
         create:
           name: osx-binaries2
@@ -214,7 +214,7 @@ jobs:
         - export DOTNET_ROOT="$(brew --prefix)/opt/dotnet/libexec"
         - cd src/wrapper/csharp
       script:
-        - dotnet build -c Release
+        - dotnet build -c Release --runtime osx-x64
         - mkdir -p out/lib
         - cmake -E copy_directory bin/Release out/lib/
         - ls -R -a

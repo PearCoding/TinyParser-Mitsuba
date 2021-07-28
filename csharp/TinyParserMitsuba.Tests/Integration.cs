@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.IO;
 
 namespace TinyParserMitsuba.Tests
 {
@@ -13,6 +14,9 @@ namespace TinyParserMitsuba.Tests
         public void TestEmpty()
         {
             SceneLoader loader = new();
+            loader.AddArgument("test", "test");
+            loader.AddLookupDir("test/");
+
             Scene scene = loader.LoadFromString("");
             Assert.IsNull(scene);
             Assert.IsTrue(loader.HasError);
@@ -152,6 +156,31 @@ namespace TinyParserMitsuba.Tests
             var shape2 = scene.AnonymousChildren[5];
             Assert.IsTrue(shape2.Properties.ContainsKey("to_world"));
             Assert.AreEqual(shape2.AnonymousChildren.Count, 2);
+        }
+
+        [Test]
+        public void TestFile()
+        {
+            File.WriteAllText(TestContext.CurrentContext.WorkDirectory + "/test.xml",
+                @"<?xml version='1.0' encoding='utf-8'?>
+<scene version='0.5.0'>
+    <integrator type='path'>
+        <string name='param1' value='$test' />
+    </integrator>
+</scene>
+");
+
+            SceneLoader loader = new();
+            loader.AddArgument("test", "test");
+            loader.AddLookupDir(TestContext.CurrentContext.WorkDirectory);
+            Scene scene = loader.LoadFromFile(TestContext.CurrentContext.WorkDirectory + "/test.xml");
+            Assert.IsNotNull(scene);
+            Assert.IsFalse(loader.HasError);
+            Assert.AreEqual(scene.Type, ObjectType.Scene);
+            Assert.AreEqual(scene.MajorVersion, 0);
+            Assert.AreEqual(scene.MinorVersion, 5);
+            Assert.AreEqual(scene.PatchVersion, 0);
+
         }
     }
 }

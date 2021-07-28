@@ -52,16 +52,13 @@ namespace TinyParserMitsuba
     }
 
     delegate void tpm_error_callback([MarshalAs(UnmanagedType.LPStr)] string str);
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    [StructLayout(LayoutKind.Sequential)]
     internal struct tpm_load_options
     {
-        [MarshalAs(UnmanagedType.ByValArray)]
-        public string[] lookup_dirs;
+        public IntPtr lookup_dirs;
         public tpm_size lookup_dirs_count;
-        [MarshalAs(UnmanagedType.ByValArray)]
-        public string[] argument_keys;
-        [MarshalAs(UnmanagedType.ByValArray)]
-        public string[] argument_values;
+        public IntPtr argument_keys;
+        public IntPtr argument_values;
         public tpm_size argument_counts;
         public tpm_bool disable_lowercase_conversion;
         public tpm_error_callback error_callback;

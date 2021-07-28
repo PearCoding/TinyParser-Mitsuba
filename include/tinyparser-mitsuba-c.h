@@ -80,6 +80,7 @@ TPM_C_LIB tpm_object_type tpm_get_object_type(tpm_object_handle handle);
 TPM_C_LIB tpm_property_type tpm_get_property_type(tpm_property_handle handle);
 
 /* Loading stuff */
+typedef void (*tpm_error_callback)(const char*);
 typedef struct {
 	const char** lookup_dirs;
 	size_t lookup_dirs_count;
@@ -89,6 +90,8 @@ typedef struct {
 	size_t argument_counts;
 
 	tpm_bool disable_lowercase_conversion;
+
+	tpm_error_callback error_callback;
 } tpm_load_options;
 
 TPM_C_LIB tpm_object_handle tpm_load_file(const char* path);
@@ -110,13 +113,13 @@ TPM_C_LIB tpm_version tpm_get_version();
 TPM_C_LIB tpm_version tpm_get_scene_version(tpm_object_handle handle);
 
 /* Object interface */
-TPM_C_LIB const char* tpm_get_plugin_type(tpm_object_handle handle);
+TPM_C_LIB size_t tpm_get_plugin_type(tpm_object_handle handle, char* str);
 TPM_C_LIB tpm_property_handle tpm_get_property(tpm_object_handle handle, const char* key);
 TPM_C_LIB size_t tpm_get_property_count(tpm_object_handle handle);
-TPM_C_LIB const char* tpm_get_property_key(tpm_object_handle handle, size_t id);
+TPM_C_LIB size_t tpm_get_property_key(tpm_object_handle handle, size_t id, char* str);
 TPM_C_LIB tpm_object_handle tpm_get_named_child(tpm_object_handle handle, const char* key);
 TPM_C_LIB size_t tpm_get_named_child_count(tpm_object_handle handle);
-TPM_C_LIB const char* tpm_get_named_child_key(tpm_object_handle handle, size_t id);
+TPM_C_LIB size_t tpm_get_named_child_key(tpm_object_handle handle, size_t id, char* str);
 TPM_C_LIB tpm_object_handle tpm_get_anonymous_child(tpm_object_handle handle, size_t id);
 TPM_C_LIB size_t tpm_get_anonymous_child_count(tpm_object_handle handle);
 
@@ -144,8 +147,8 @@ typedef struct {
 TPM_C_LIB tpm_transform tpm_property_get_transform(tpm_property_handle handle, tpm_bool* ok);
 TPM_C_LIB tpm_transform tpm_property_get_transform2(tpm_property_handle handle, const tpm_transform* def, tpm_bool* ok);
 
-TPM_C_LIB const char* tpm_property_get_string(tpm_property_handle handle, tpm_bool* ok);
-TPM_C_LIB const char* tpm_property_get_string2(tpm_property_handle handle, const char* def, tpm_bool* ok);
+TPM_C_LIB size_t tpm_property_get_string(tpm_property_handle handle, tpm_bool* ok, char* str);
+TPM_C_LIB size_t tpm_property_get_string2(tpm_property_handle handle, const char* def, tpm_bool* ok, char* str);
 
 typedef struct {
 	double temperature;

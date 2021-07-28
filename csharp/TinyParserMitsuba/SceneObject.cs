@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace TinyParserMitsuba
 {
@@ -13,16 +14,28 @@ namespace TinyParserMitsuba
             Properties = new(prop_count);
             for (int i = 0; i < prop_count; ++i)
             {
-                string name = Lib.tpm_get_property_key(_Handle, (ulong)i);
-                Properties.Add(name, new(Lib.tpm_get_property(_Handle, name)));
+                int size = (int)Lib.tpm_get_property_key(_Handle, (ulong)i, null);
+                if (size > 0)
+                {
+                    StringBuilder sb = new(size);
+                    Lib.tpm_get_property_key(_Handle, (ulong)i, sb);
+                    string name = sb.ToString();
+                    Properties.Add(name, new(Lib.tpm_get_property(_Handle, name)));
+                }
             }
 
             int named_count = (int)Lib.tpm_get_named_child_count(_Handle);
             NamedChildren = new(named_count);
             for (int i = 0; i < named_count; ++i)
             {
-                string name = Lib.tpm_get_named_child_key(_Handle, (ulong)i);
-                NamedChildren.Add(name, new(Lib.tpm_get_named_child(_Handle, name)));
+                int size = (int)Lib.tpm_get_named_child_key(_Handle, (ulong)i, null);
+                if (size > 0)
+                {
+                    StringBuilder sb = new(size);
+                    Lib.tpm_get_named_child_key(_Handle, (ulong)i, sb);
+                    string name = sb.ToString();
+                    NamedChildren.Add(name, new(Lib.tpm_get_named_child(_Handle, name)));
+                }
             }
 
             int anony_count = (int)Lib.tpm_get_anonymous_child_count(_Handle);
@@ -41,7 +54,23 @@ namespace TinyParserMitsuba
         public List<SceneObject> AnonymousChildren { get; }
 
         public ObjectType Type { get => (ObjectType)Lib.tpm_get_object_type(_Handle); }
-        public string PluginType { get => Lib.tpm_get_plugin_type(_Handle); }
+        public string PluginType
+        {
+            get
+            {
+                int size = (int)Lib.tpm_get_plugin_type(_Handle, null);
+                if (size > 0)
+                {
+                    StringBuilder sb = new(size);
+                    Lib.tpm_get_plugin_type(_Handle, sb);
+                    return sb.ToString();
+                }
+                else
+                {
+                    return "";
+                }
+            }
+        }
 
 
         private IntPtr _Handle;

@@ -11,6 +11,7 @@ namespace TinyParserMitsuba
             _LookupPaths = new();
             _Arguments = new();
             _DisableLowerCaseConversion = false;
+            Error = "";
         }
 
         private tpm_load_options GetOptions()
@@ -33,11 +34,14 @@ namespace TinyParserMitsuba
             }
 
             options.disable_lowercase_conversion = (byte)(_DisableLowerCaseConversion ? 1 : 0);
+
+            options.error_callback = new(str => Error = str);
             return options;
         }
 
         public Scene? LoadFromFile(string path)
         {
+            Error = "";
             var options = GetOptions();
             var scene_handle = Lib.tpm_load_file2(path, ref options);
             if (scene_handle == IntPtr.Zero)
@@ -48,6 +52,7 @@ namespace TinyParserMitsuba
 
         public Scene? LoadFromString(string str)
         {
+            Error = "";
             var options = GetOptions();
             var scene_handle = Lib.tpm_load_string2(str, ref options);
             if (scene_handle == IntPtr.Zero)
@@ -81,6 +86,9 @@ namespace TinyParserMitsuba
             get => _DisableLowerCaseConversion;
             set => _DisableLowerCaseConversion = value;
         }
+
+        public string Error { get; set; }
+        public bool HasError { get => Error.Length > 0; }
 
         private List<string> _LookupPaths;
         private Dictionary<string, string> _Arguments;

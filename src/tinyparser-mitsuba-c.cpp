@@ -4,6 +4,7 @@
 #include "tinyparser-mitsuba.h"
 #include <cassert>
 #include <cstring>
+#include <exception>
 
 // Utility
 enum tpm_handle_type {
@@ -174,7 +175,9 @@ tpm_object_handle tpm_load_file2(const char* path, const tpm_load_options* optio
 	try {
 		auto scene = loader.loadFromFile(path);
 		return _pack_object(new TPM_NAMESPACE::Scene(scene), true);
-	} catch (...) {
+	} catch (const std::exception& e) {
+		if (options->error_callback)
+			options->error_callback(e.what());
 		return nullptr;
 	}
 }
@@ -189,7 +192,9 @@ tpm_object_handle tpm_load_string2(const char* str, const tpm_load_options* opti
 	try {
 		auto scene = loader.loadFromString(str);
 		return _pack_object(new TPM_NAMESPACE::Scene(scene), true);
-	} catch (...) {
+	} catch (const std::exception& e) {
+		if (options->error_callback)
+			options->error_callback(e.what());
 		return nullptr;
 	}
 }
@@ -204,7 +209,9 @@ tpm_object_handle tpm_load_memory2(const char* data, size_t size, const tpm_load
 	try {
 		auto scene = loader.loadFromMemory(reinterpret_cast<const uint8_t*>(data), size);
 		return _pack_object(new TPM_NAMESPACE::Scene(scene), true);
-	} catch (...) {
+	} catch (const std::exception& e) {
+		if (options->error_callback)
+			options->error_callback(e.what());
 		return nullptr;
 	}
 }
@@ -227,13 +234,17 @@ tpm_version tpm_get_scene_version(tpm_object_handle handle)
 }
 
 /* Object interface */
-const char* tpm_get_plugin_type(tpm_object_handle handle)
+size_t tpm_get_plugin_type(tpm_object_handle handle, char* str)
 {
 	auto ptr = _extract_object(handle);
-	if (ptr)
-		return ptr->pluginType().c_str();
-	else
-		return nullptr;
+	if (ptr) {
+		size_t size = ptr->pluginType().size() + 1;
+		if (str)
+			std::memcpy(str, ptr->pluginType().c_str(), size);
+		return size;
+	} else {
+		return 0;
+	}
 }
 
 tpm_property_handle tpm_get_property(tpm_object_handle handle, const char* key)
@@ -257,19 +268,21 @@ size_t tpm_get_property_count(tpm_object_handle handle)
 	else
 		return 0;
 }
-const char* tpm_get_property_key(tpm_object_handle handle, size_t id)
+
+size_t tpm_get_property_key(tpm_object_handle handle, size_t id, char* str)
 {
 	auto ptr = _extract_object(handle);
 	if (ptr) {
 		auto it = ptr->properties().begin();
 		std::advance(it, id);
-		if (it != ptr->properties().end())
-			return it->first.c_str(); // TODO: Might trigger memory issues??
-		else
-			return nullptr;
-	} else {
-		return nullptr;
+		if (it != ptr->properties().end()) {
+			size_t size = it->first.size() + 1;
+			if (str)
+				std::memcpy(str, it->first.c_str(), size + 1);
+			return size;
+		}
 	}
+	return 0;
 }
 
 tpm_object_handle tpm_get_named_child(tpm_object_handle handle, const char* key)
@@ -285,6 +298,7 @@ tpm_object_handle tpm_get_named_child(tpm_object_handle handle, const char* key)
 		return nullptr;
 	}
 }
+
 size_t tpm_get_named_child_count(tpm_object_handle handle)
 {
 	auto ptr = _extract_object(handle);
@@ -293,19 +307,21 @@ size_t tpm_get_named_child_count(tpm_object_handle handle)
 	else
 		return 0;
 }
-const char* tpm_get_named_child_key(tpm_object_handle handle, size_t id)
+
+size_t tpm_get_named_child_key(tpm_object_handle handle, size_t id, char* str)
 {
 	auto ptr = _extract_object(handle);
 	if (ptr) {
 		auto it = ptr->namedChildren().begin();
 		std::advance(it, id);
-		if (it != ptr->namedChildren().end())
-			return it->first.c_str(); // TODO: Might trigger memory issues??
-		else
-			return nullptr;
-	} else {
-		return nullptr;
+		if (it != ptr->namedChildren().end()) {
+			size_t size = it->first.size() + 1;
+			if (str)
+				std::memcpy(str, it->first.c_str(), size + 1);
+			return size;
+		}
 	}
+	return 0;
 }
 
 tpm_object_handle tpm_get_anonymous_child(tpm_object_handle handle, size_t id)
@@ -500,12 +516,13 @@ tpm_transform tpm_property_get_transform2(tpm_property_handle handle, const tpm_
 	}
 }
 
-const char* tpm_property_get_string(tpm_property_handle handle, tpm_bool* ok)
+size_t tpm_property_get_string(tpm_property_handle handle, tpm_bool* ok, char* str)
 {
 	const char* def = "";
-	return tpm_property_get_string2(handle, def, ok);
+	return tpm_property_get_string2(handle, def, ok, str);
 }
-const char* tpm_property_get_string2(tpm_property_handle handle, const char* def, tpm_bool* ok)
+
+size_t tpm_property_get_string2(tpm_property_handle handle, const char* def, tpm_bool* ok, char* str)
 {
 	auto ptr = _extract_property(handle);
 	if (ptr) {
@@ -515,17 +532,20 @@ const char* tpm_property_get_string2(tpm_property_handle handle, const char* def
 		if (ok2) {
 			if (ok)
 				*ok = TPM_TRUE;
-			return var.c_str(); // TODO: This might trigger a memory issue!
-		} else {
-			if (ok)
-				*ok = TPM_FALSE;
-			return def;
+
+			size_t size = var.size() + 1;
+			if (str)
+				std::memcpy(str, var.c_str(), size);
+			return size;
 		}
-	} else {
-		if (ok)
-			*ok = TPM_FALSE;
-		return def;
 	}
+
+	if (ok)
+		*ok = TPM_FALSE;
+	size_t size = std::strlen(def) + 1;
+	if (str)
+		std::memcpy(str, def, size);
+	return size;
 }
 
 tpm_blackbody tpm_property_get_blackbody(tpm_property_handle handle, tpm_bool* ok)

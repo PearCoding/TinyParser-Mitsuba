@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 
 #pragma warning disable IDE1006 // Naming convention might be weird here, but thats on purpose
 namespace TinyParserMitsuba
@@ -49,6 +50,8 @@ namespace TinyParserMitsuba
         TPM_PT_TRANSFORM,
         TPM_PT_VECTOR,
     }
+
+    delegate void tpm_error_callback([MarshalAs(UnmanagedType.LPStr)] string str);
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
     internal struct tpm_load_options
     {
@@ -61,6 +64,7 @@ namespace TinyParserMitsuba
         public string[] argument_values;
         public tpm_size argument_counts;
         public tpm_bool disable_lowercase_conversion;
+        public tpm_error_callback error_callback;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -155,19 +159,19 @@ namespace TinyParserMitsuba
 
         #region Object
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern string tpm_get_plugin_type(tpm_object_handle handle);
+        public static extern tpm_size tpm_get_plugin_type(tpm_object_handle handle, StringBuilder str);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern tpm_property_handle tpm_get_property(tpm_object_handle handle, string key);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
         public static extern tpm_size tpm_get_property_count(tpm_object_handle handle);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern string tpm_get_property_key(tpm_object_handle handle, tpm_size id);
+        public static extern tpm_size tpm_get_property_key(tpm_object_handle handle, tpm_size id, StringBuilder str);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern tpm_object_handle tpm_get_named_child(tpm_object_handle handle, string key);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
         public static extern tpm_size tpm_get_named_child_count(tpm_object_handle handle);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern string tpm_get_named_child_key(tpm_object_handle handle, tpm_size id);
+        public static extern tpm_size tpm_get_named_child_key(tpm_object_handle handle, tpm_size id, StringBuilder str);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
         public static extern tpm_object_handle tpm_get_anonymous_child(tpm_object_handle handle, tpm_size id);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
@@ -203,9 +207,9 @@ namespace TinyParserMitsuba
         public static extern tpm_transform tpm_property_get_transform2(tpm_property_handle handle, ref tpm_transform def, ref tpm_bool ok);
 
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern string tpm_property_get_string(tpm_property_handle handle, ref tpm_bool ok);
+        public static extern tpm_size tpm_property_get_string(tpm_property_handle handle, ref tpm_bool ok, StringBuilder str);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern string tpm_property_get_string2(tpm_property_handle handle, string def, ref tpm_bool ok);
+        public static extern tpm_size tpm_property_get_string2(tpm_property_handle handle, string def, ref tpm_bool ok, StringBuilder str);
 
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
         public static extern tpm_blackbody tpm_property_get_blackbody(tpm_property_handle handle, ref tpm_bool ok);

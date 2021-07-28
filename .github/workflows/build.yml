@@ -88,10 +88,13 @@ jobs:
       with:
         dotnet-version: '5.0.x'
 
+    - name: Test
+      working-directory: ${{github.workspace}}/csharp
+      run: dotnet test -c Release
+
     - name: Pack
-      run: |
-        cd csharp
-        dotnet pack -c Release
+      working-directory: ${{github.workspace}}/csharp
+      run: dotnet pack -c Release
 
     - name: Upload .nupkg
       uses: actions/upload-artifact@v2

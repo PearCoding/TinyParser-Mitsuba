@@ -12,8 +12,8 @@ namespace TinyParserMitsuba
             PatchVersion = version.patch;
         }
 
-        int MajorVersion { get; }
-        int MinorVersion { get; }
-        int PatchVersion { get; }
+        public int MajorVersion { get; }
+        public int MinorVersion { get; }
+        public int PatchVersion { get; }
     }
 }

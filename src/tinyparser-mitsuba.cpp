@@ -894,7 +894,13 @@ class InternalSceneLoader {
 public:
 	static Scene loadFromXML(const SceneLoader& loader, const tinyxml2::XMLDocument& xml)
 	{
+		if (xml.Error())
+			throw std::runtime_error(xml.ErrorStr());
+
 		const auto rootScene = xml.RootElement();
+		if (!rootScene)
+			throw std::runtime_error("Root element is null");
+
 		if (strcmp(rootScene->Name(), "scene") != 0)
 			throw std::runtime_error("Expected root element to be 'scene'");
 

@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 
 namespace TinyParserMitsuba
 {
@@ -128,15 +129,26 @@ namespace TinyParserMitsuba
         public string GetString(string def = "")
         {
             byte ok = 0;
-            var v = Lib.tpm_property_get_string2(_Handle, def, ref ok);
-            return v;
+            int size = (int)Lib.tpm_property_get_string2(_Handle, def, ref ok, null);
+            StringBuilder sb = new(size);
+            Lib.tpm_property_get_string2(_Handle, def, ref ok, sb);
+            return sb.ToString();
         }
 
         public string GetStringUnsafe(string def = "")
         {
             byte ok = 0;
-            var v = Lib.tpm_property_get_string2(_Handle, def, ref ok);
-            return ok != 0 ? v : null;
+            int size = (int)Lib.tpm_property_get_string2(_Handle, def, ref ok, null);
+            if (size > 0 && ok != 0)
+            {
+                StringBuilder sb = new(size);
+                Lib.tpm_property_get_string2(_Handle, def, ref ok, sb);
+                return sb.ToString();
+            }
+            else
+            {
+                return null;
+            }
         }
 
         // Spectrum

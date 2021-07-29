@@ -155,8 +155,14 @@ namespace TinyParserMitsuba
         #endregion
 
         #region Object
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern tpm_bool tpm_has_plugin_type(tpm_object_handle handle);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern tpm_size tpm_get_plugin_type(tpm_object_handle handle, StringBuilder str);
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern tpm_bool tpm_has_id(tpm_object_handle handle);
+        [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern tpm_size tpm_get_id(tpm_object_handle handle, StringBuilder str);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern tpm_property_handle tpm_get_property(tpm_object_handle handle, string key);
         [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]

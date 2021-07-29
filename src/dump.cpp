@@ -140,8 +140,10 @@ static void dumpObject(Object* obj, const std::string& name, int depth)
 {
 	appendWS(depth);
 	std::cout << name << "[" << objectTypeStr(obj->type()) << "]";
-	if (!obj->pluginType().empty())
+	if (obj->hasPluginType())
 		std::cout << "(" << obj->pluginType() << ")";
+	if (obj->hasID())
+		std::cout << "(#" << obj->id() << ")";
 	std::cout << std::endl;
 
 	// Properties

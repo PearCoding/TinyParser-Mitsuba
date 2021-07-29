@@ -128,6 +128,16 @@ static TPM_NAMESPACE::SceneLoader _construct_loader(const tpm_load_options* opti
 	return loader;
 }
 
+static size_t _handle_string(const std::string& src, char* dst)
+{
+	size_t size = src.size() + 1;
+	if (dst) {
+		std::memcpy(dst, src.c_str(), size);
+		dst[size - 1] = '\0'; // Be safe about it!
+	}
+	return size;
+}
+
 // Implementation
 
 void tpm_free_object(tpm_object_handle handle)
@@ -234,17 +244,39 @@ tpm_version tpm_get_scene_version(tpm_object_handle handle)
 }
 
 /* Object interface */
+tpm_bool tpm_has_plugin_type(tpm_object_handle handle)
+{
+	auto ptr = _extract_object(handle);
+	if (ptr)
+		return ptr->hasPluginType() ? TPM_TRUE : TPM_FALSE;
+	else
+		return TPM_FALSE;
+}
 size_t tpm_get_plugin_type(tpm_object_handle handle, char* str)
 {
 	auto ptr = _extract_object(handle);
-	if (ptr) {
-		size_t size = ptr->pluginType().size() + 1;
-		if (str)
-			std::memcpy(str, ptr->pluginType().c_str(), size);
-		return size;
-	} else {
+	if (ptr)
+		return _handle_string(ptr->pluginType(), str);
+	else
 		return 0;
-	}
+}
+
+tpm_bool tpm_has_id(tpm_object_handle handle)
+{
+	auto ptr = _extract_object(handle);
+	if (ptr)
+		return ptr->hasPluginType() ? TPM_TRUE : TPM_FALSE;
+	else
+		return TPM_FALSE;
+}
+
+size_t tpm_get_id(tpm_object_handle handle, char* str)
+{
+	auto ptr = _extract_object(handle);
+	if (ptr)
+		return _handle_string(ptr->id(), str);
+	else
+		return 0;
 }
 
 tpm_property_handle tpm_get_property(tpm_object_handle handle, const char* key)
@@ -275,12 +307,8 @@ size_t tpm_get_property_key(tpm_object_handle handle, size_t id, char* str)
 	if (ptr) {
 		auto it = ptr->properties().begin();
 		std::advance(it, id);
-		if (it != ptr->properties().end()) {
-			size_t size = it->first.size() + 1;
-			if (str)
-				std::memcpy(str, it->first.c_str(), size + 1);
-			return size;
-		}
+		if (it != ptr->properties().end())
+			return _handle_string(it->first, str);
 	}
 	return 0;
 }
@@ -314,12 +342,8 @@ size_t tpm_get_named_child_key(tpm_object_handle handle, size_t id, char* str)
 	if (ptr) {
 		auto it = ptr->namedChildren().begin();
 		std::advance(it, id);
-		if (it != ptr->namedChildren().end()) {
-			size_t size = it->first.size() + 1;
-			if (str)
-				std::memcpy(str, it->first.c_str(), size + 1);
-			return size;
-		}
+		if (it != ptr->namedChildren().end())
+			return _handle_string(it->first, str);
 	}
 	return 0;
 }
@@ -533,19 +557,13 @@ size_t tpm_property_get_string2(tpm_property_handle handle, const char* def, tpm
 			if (ok)
 				*ok = TPM_TRUE;
 
-			size_t size = var.size() + 1;
-			if (str)
-				std::memcpy(str, var.c_str(), size);
-			return size;
+			return _handle_string(var, str);
 		}
 	}
 
 	if (ok)
 		*ok = TPM_FALSE;
-	size_t size = std::strlen(def) + 1;
-	if (str)
-		std::memcpy(str, def, size);
-	return size;
+	return _handle_string(def, str);
 }
 
 tpm_blackbody tpm_property_get_blackbody(tpm_property_handle handle, tpm_bool* ok)

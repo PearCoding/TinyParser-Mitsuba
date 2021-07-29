@@ -469,9 +469,10 @@ private:
 // --------------- Object
 class TPM_LIB Object {
 public:
-	inline explicit Object(ObjectType type, const std::string& pluginType)
+	inline explicit Object(ObjectType type, const std::string& pluginType, const std::string& id)
 		: mType(type)
 		, mPluginType(pluginType)
+		, mID(id)
 	{
 	}
 
@@ -483,6 +484,10 @@ public:
 
 	TPM_NODISCARD inline ObjectType type() const { return mType; }
 	TPM_NODISCARD inline const std::string& pluginType() const { return mPluginType; }
+	TPM_NODISCARD inline const std::string& id() const { return mID; }
+
+	TPM_NODISCARD inline bool hasPluginType() const { return !mPluginType.empty(); }
+	TPM_NODISCARD inline bool hasID() const { return !mID.empty(); }
 
 	TPM_NODISCARD inline Property property(const std::string& key) const
 	{
@@ -508,6 +513,7 @@ public:
 private:
 	ObjectType mType;
 	std::string mPluginType;
+	std::string mID;
 	std::unordered_map<std::string, Property> mProperties;
 	std::vector<std::shared_ptr<Object>> mChildren;
 	std::unordered_map<std::string, std::shared_ptr<Object>> mNamedChildren;
@@ -530,7 +536,7 @@ public:
 
 private:
 	inline Scene()
-		: Object(OT_SCENE, "")
+		: Object(OT_SCENE, "", "")
 	{
 	}
 

@@ -58,17 +58,36 @@ namespace TinyParserMitsuba
         {
             get
             {
-                int size = (int)Lib.tpm_get_plugin_type(_Handle, null);
-                if (size > 0)
+                if (Lib.tpm_has_plugin_type(_Handle) != 0)
                 {
-                    StringBuilder sb = new(size);
-                    Lib.tpm_get_plugin_type(_Handle, sb);
-                    return sb.ToString();
+                    int size = (int)Lib.tpm_get_plugin_type(_Handle, null);
+                    if (size > 0)
+                    {
+                        StringBuilder sb = new(size);
+                        Lib.tpm_get_plugin_type(_Handle, sb);
+                        return sb.ToString();
+                    }
                 }
-                else
+
+                return "";
+            }
+        }
+        public string ID
+        {
+            get
+            {
+                if (Lib.tpm_has_id(_Handle) != 0)
                 {
-                    return "";
+                    int size = (int)Lib.tpm_get_id(_Handle, null);
+                    if (size > 0)
+                    {
+                        StringBuilder sb = new(size);
+                        Lib.tpm_get_id(_Handle, sb);
+                        return sb.ToString();
+                    }
                 }
+
+                return "";
             }
         }
 

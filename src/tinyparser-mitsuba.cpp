@@ -860,17 +860,17 @@ static void parseObject(Object* obj, const ParseContext& ctx, IDContainer& ids, 
 					&& strcmp(childElement->Name(), _parseElements[i].Name) == 0) {
 
 					auto pluginType = childElement->Attribute("type");
-					child			= std::make_shared<Object>(_parseElements[i].Type, pluginType ? pluginType : "");
+					auto id			= childElement->Attribute("id");
+					child			= std::make_shared<Object>(_parseElements[i].Type, pluginType ? pluginType : "", id ? id : "");
 					parseObject(child.get(), nextCtx, ids, childElement, _parseElements[i].Flags);
 					break;
 				}
 			}
 
 			if (child) {
-				auto id = childElement->Attribute("id");
-				if (id) {
-					if (!ids.hasID(id)) {
-						ids.registerID(id, child);
+				if (child->hasID()) {
+					if (!ids.hasID(child->id())) {
+						ids.registerID(child->id(), child);
 					} else {
 						// TODO: Warning
 					}

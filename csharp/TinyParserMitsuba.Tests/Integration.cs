@@ -135,6 +135,7 @@ namespace TinyParserMitsuba.Tests
             Assert.AreEqual(sensor.AnonymousChildren[1].Type, ObjectType.Film);
 
             var tex = scene.AnonymousChildren[2];
+            Assert.IsTrue(tex.ID == "tex");
             Assert.IsTrue(tex.Properties.ContainsKey("filename")); // Not loaded, as described in the README.md
             Assert.IsTrue(tex.Properties.ContainsKey("filter_type"));
 

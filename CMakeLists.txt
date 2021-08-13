@@ -19,13 +19,13 @@ else()
 	set(TPM_BUILD_EXTRA_DEFAULT ON)
 endif()
 
-option(BUILD_SHARED_LIBS 	"Build as shared library" OFF)
-option(BUILD_TESTING 		"Build the testing tree" ${TPM_BUILD_EXTRA_DEFAULT})
+option(BUILD_SHARED_LIBS 		"Build as shared library" OFF)
+option(TPM_BUILD_TESTING 		"Build the testing tree" ${TPM_BUILD_EXTRA_DEFAULT})
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	option(GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." OFF)
+	option(TPM_GENERATE_COVERAGE 	"Generate coverage for debug builds - Currently only supported with the GCC compiler." OFF)
 endif()
-option(BUILD_DOCUMENTATION 	"Build documentation with doxygen." ${TPM_BUILD_EXTRA_DEFAULT})
-option(BUILD_DUMP_UTILITY 	"Build utility tool to dump parsable files." ${TPM_BUILD_EXTRA_DEFAULT})
+option(TPM_BUILD_DOCUMENTATION 	"Build documentation with doxygen." ${TPM_BUILD_EXTRA_DEFAULT})
+option(TPM_BUILD_DUMP_UTILITY 	"Build utility tool to dump parsable files." ${TPM_BUILD_EXTRA_DEFAULT})
 
 #SETS
 if(BUILD_SHARED_LIBS AND WIN32 AND NOT CYGWIN)
@@ -60,26 +60,26 @@ set_target_properties(${TPM_TARGET} PROPERTIES
 
 target_compile_definitions(${TPM_TARGET} PUBLIC $<$<CONFIG:Debug>:TPM_DEBUG> PRIVATE "TPM_EXPORT")
 
-if(BUILD_DUMP_UTILITY)
+if(TPM_BUILD_DUMP_UTILITY)
 	add_executable(tpm_dump src/dump.cpp)
 	target_link_libraries(tpm_dump PRIVATE ${TPM_TARGET})
 endif()
 
 # Coverage start
-if(GENERATE_COVERAGE AND (CMAKE_BUILD_TYPE MATCHES Debug))
+if(TPM_GENERATE_COVERAGE AND (CMAKE_BUILD_TYPE MATCHES Debug))
 	include(cmake/Coveralls.cmake)
 	coveralls_turn_on_coverage()
 endif()
 
 # Tests
-include(CTest)
-if(BUILD_TESTING)
+if(TPM_BUILD_TESTING)
+	include(CTest)
 	add_subdirectory(external/Catch2)
 	add_subdirectory(src/tests)
 endif()
 
 # Coverage End
-if(GENERATE_COVERAGE AND (CMAKE_BUILD_TYPE MATCHES Debug))
+if(TPM_GENERATE_COVERAGE AND (CMAKE_BUILD_TYPE MATCHES Debug))
 	include(cmake/Coverage.cmake)
 endif()
 
@@ -109,7 +109,7 @@ add_custom_command(TARGET ${TPM_TARGET}_c POST_BUILD
 )
 
 # Documentation
-if(BUILD_DOCUMENTATION)
+if(TPM_BUILD_DOCUMENTATION)
 	include(cmake/Documentation.cmake)
 endif()
 

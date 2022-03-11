@@ -113,8 +113,8 @@ if(TPM_BUILD_DOCUMENTATION)
 	include(cmake/Documentation.cmake)
 endif()
 
-# Install
+# Install & Package
+if(NOT TPM_IS_SUBPROJECT OR TPM_FORCE_INSTALL)
 include(cmake/setup_install.cmake)
-		
-# Package
 include(cmake/setup_package.cmake)
+endif()

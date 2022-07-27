@@ -223,6 +223,11 @@ static void _parseVersion(const char* v, int& major, int& minor, int& patch)
 	patch = std::stoi(version.substr(s2 + 1));
 }
 
+static inline bool isidentifier(char c)
+{
+	return std::isalnum(c) || c == '_';
+}
+
 static std::string unpackValues(const char* str, const ArgumentContainer& cnt)
 {
 	std::string unpackedStr;
@@ -230,7 +235,7 @@ static std::string unpackValues(const char* str, const ArgumentContainer& cnt)
 		if (str[i] == '$') {
 			std::string variable;
 			++i;
-			for (; str[i] && std::isalnum(str[i]); ++i) {
+			for (; str[i] && isidentifier(str[i]); ++i) {
 				variable += str[i];
 			}
 			if (!variable.empty()) {

@@ -1,5 +1,5 @@
 #define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "tinyparser-mitsuba.h"
 
@@ -80,12 +80,12 @@ TEST_CASE("Rotation", "[transform]")
 	REQUIRE(M(0, 2) == 0);
 	REQUIRE(M(0, 3) == 0);
 	REQUIRE(M(1, 0) == 0);
-	REQUIRE(M(1, 1) == Approx(ca));
-	REQUIRE(M(1, 2) == Approx(-sa));
+	REQUIRE(M(1, 1) == Catch::Approx(ca));
+	REQUIRE(M(1, 2) == Catch::Approx(-sa));
 	REQUIRE(M(1, 3) == 0);
 	REQUIRE(M(2, 0) == 0);
-	REQUIRE(M(2, 1) == Approx(sa));
-	REQUIRE(M(2, 2) == Approx(ca));
+	REQUIRE(M(2, 1) == Catch::Approx(sa));
+	REQUIRE(M(2, 2) == Catch::Approx(ca));
 	REQUIRE(M(2, 3) == 0);
 	REQUIRE(M(3, 0) == 0);
 	REQUIRE(M(3, 1) == 0);

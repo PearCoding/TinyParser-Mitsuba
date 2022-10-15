@@ -38,9 +38,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 set(CMAKE_DEBUG_POSTFIX  "_d")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/)
 
-include(cmake/check_submodules.cmake)
+include(cmake/SetupCPM.cmake)
+include(cmake/GetDependencies.cmake)
+
 set(TINYPARSER_MITSUBA_FILES include/tinyparser-mitsuba.h src/tinyparser-mitsuba.cpp)
-set(TINYXML2_FILES external/tinyxml2/tinyxml2.cpp external/tinyxml2/tinyxml2.h)
+set(TINYXML2_FILES ${tinyxml2_SOURCE_DIR}/tinyxml2.cpp ${tinyxml2_SOURCE_DIR}/tinyxml2.h)
 
 set(TPM_NAMESPACE tinyparser_mitsuba)
 add_library(${TPM_TARGET} ${TINYPARSER_MITSUBA_FILES} ${TINYXML2_FILES}) 
@@ -49,7 +51,7 @@ PUBLIC
 	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 PRIVATE 
-	${PROJECT_SOURCE_DIR}/external/tinyxml2/
+	${tinyxml2_SOURCE_DIR}
 )
 target_compile_features(${TPM_TARGET} PUBLIC cxx_std_11)
 set_target_properties(${TPM_TARGET} PROPERTIES
@@ -74,7 +76,7 @@ endif()
 # Tests
 if(TPM_BUILD_TESTING)
 	include(CTest)
-	add_subdirectory(external/Catch2)
+	CPMAddPackage("gh:catchorg/Catch2@3.1.0")
 	add_subdirectory(src/tests)
 endif()
 

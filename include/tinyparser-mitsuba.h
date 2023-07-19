@@ -116,11 +116,11 @@ struct TPM_LIB Transform {
 	using Array = std::array<Number, 4 * 4>;
 	Array matrix; // Row major
 
-	Transform()					= default;
-	Transform(const Transform&) = default;
+	Transform()							   = default;
+	Transform(const Transform&)			   = default;
 	Transform& operator=(const Transform&) = default;
 	Transform(Transform&&)				   = default;
-	Transform& operator=(Transform&&) = default;
+	Transform& operator=(Transform&&)	   = default;
 
 	inline explicit Transform(const Array& arr)
 		: matrix(arr)
@@ -150,6 +150,18 @@ struct TPM_LIB Transform {
 private:
 	Transform multiplyFromRight(const Transform& other) const;
 };
+TPM_NODISCARD inline bool operator==(const Transform& a, const Transform& b)
+{
+	for (int i = 0; i < 16; ++i) {
+		if (a.matrix[i] != a.matrix[i])
+			return false;
+	}
+	return true;
+}
+TPM_NODISCARD inline bool operator!=(const Transform& a, const Transform& b)
+{
+	return !(a == b);
+}
 
 // --------------- Animation
 /// A list of time and transform pairs. It is not sorted in any way
@@ -247,7 +259,7 @@ public:
 	Property(Property&& other)		= default;
 
 	Property& operator=(const Property& other) = default;
-	Property& operator=(Property&& other) = default;
+	Property& operator=(Property&& other)	   = default;
 
 	TPM_NODISCARD inline PropertyType type() const { return mType; }
 	TPM_NODISCARD inline bool isValid() const { return mType != PT_NONE; }
@@ -480,7 +492,7 @@ public:
 	Object(Object&& other)		= default;
 
 	Object& operator=(const Object& other) = default;
-	Object& operator=(Object&& other) = default;
+	Object& operator=(Object&& other)	   = default;
 
 	TPM_NODISCARD inline ObjectType type() const { return mType; }
 	TPM_NODISCARD inline const std::string& pluginType() const { return mPluginType; }
@@ -528,7 +540,7 @@ public:
 	Scene(Scene&& other)	  = default;
 
 	Scene& operator=(const Scene& other) = default;
-	Scene& operator=(Scene&& other) = default;
+	Scene& operator=(Scene&& other)		 = default;
 
 	TPM_NODISCARD inline int versionMajor() const { return mVersionMajor; }
 	TPM_NODISCARD inline int versionMinor() const { return mVersionMinor; }

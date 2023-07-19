@@ -85,3 +85,28 @@ TEST_CASE("Spectrum", "[integrity]")
 	REQUIRE(weights[1] == 1);
 	REQUIRE(weights[2] == 0.5);
 }
+
+TEST_CASE("Transform", "[integrity]")
+{
+	SceneLoader loader;
+	const Transform v1 = Transform::fromRotation(Vector(1, 0, 0), 45);
+	const Transform v2 = Transform::fromRotation(Vector(0, 1, 0), 45);
+	const Transform v3 = Transform::fromRotation(Vector(1, 1, 1), 45);
+	const Transform v4 = Transform::fromScale(Vector(1, 1, 6));
+
+	auto scene = loader.loadFromString("<scene version='0.6'><transform name='test'><rotate x='1' angle='45'/></transform></scene>");
+	auto prop  = scene["test"];
+	REQUIRE(prop.getTransform() == v1);
+
+	scene = loader.loadFromString("<scene version='0.6'><transform name='test'><rotate y='1' angle='45'/></transform></scene>");
+	prop  = scene["test"];
+	REQUIRE(prop.getTransform() == v2);
+
+	scene = loader.loadFromString("<scene version='0.6'><transform name='test'><rotate x='1' y='1' z='1' angle='45'/></transform></scene>");
+	prop  = scene["test"];
+	REQUIRE(prop.getTransform() == v3);
+
+	scene = loader.loadFromString("<scene version='0.6'><transform name='test'><scale z='6'/></transform></scene>");
+	prop  = scene["test"];
+	REQUIRE(prop.getTransform() == v4);
+}

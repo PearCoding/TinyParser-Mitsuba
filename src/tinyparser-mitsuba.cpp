@@ -482,7 +482,7 @@ static Property parseSpectrum(const ParseContext& ctx, const tinyxml2::XMLElemen
 		Number tmp[MAX_SPEC];
 		auto c = _parseNumber(valueStr, tmp, MAX_SPEC);
 
-		if (c == 1) { // Uniform
+		if (c == 1) {			 // Uniform
 			return Property::fromSpectrum(Spectrum(tmp[0]));
 		} else if (c % 2 == 0) { // Wavelength + Weight pairs
 			std::vector<int> wvls;
@@ -568,12 +568,17 @@ Transform parseTransformRotate(const ParseContext& ctx, const tinyxml2::XMLEleme
 		if (!unpackVector(value, ctx.Arguments, &axis))
 			axis = Vector(0, 0, 1);
 	} else {
-		if (!unpackNumber(element->Attribute("x"), ctx.Arguments, &axis.x))
-			axis.x = 0;
-		if (!unpackNumber(element->Attribute("y"), ctx.Arguments, &axis.y))
-			axis.y = 0;
-		if (!unpackNumber(element->Attribute("z"), ctx.Arguments, &axis.z))
-			axis.z = 1;
+		axis		 = Vector(0, 0, 0);
+		bool hasData = false;
+		if (unpackNumber(element->Attribute("x"), ctx.Arguments, &axis.x))
+			hasData = true;
+		if (unpackNumber(element->Attribute("y"), ctx.Arguments, &axis.y))
+			hasData = true;
+		if (unpackNumber(element->Attribute("z"), ctx.Arguments, &axis.z))
+			hasData = true;
+
+		if (!hasData)
+			axis = Vector(0, 0, 1);
 	}
 
 	Number angle;

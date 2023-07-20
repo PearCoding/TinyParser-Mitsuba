@@ -153,7 +153,7 @@ private:
 TPM_NODISCARD inline bool operator==(const Transform& a, const Transform& b)
 {
 	for (int i = 0; i < 16; ++i) {
-		if (a.matrix[i] != a.matrix[i])
+		if (a.matrix[i] != b.matrix[i])
 			return false;
 	}
 	return true;

@@ -21,8 +21,8 @@
 #endif
 
 #define TPM_MAJOR_VERSION 0
-#define TPM_MINOR_VERSION 1
-#define TPM_PATCH_VERSION 0
+#define TPM_MINOR_VERSION 3
+#define TPM_PATCH_VERSION 3
 
 #define TPM_NAMESPACE tinyparser_mitsuba
 

@@ -5,7 +5,7 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
 endif()
 
 project(tinyparser_mitsuba
-	VERSION 0.3
+	VERSION 0.3.3
 	DESCRIPTION "Tiny parser for mitsuba project files")
 
 set(TPM_LIB_VERSION "${PROJECT_VERSION}")
